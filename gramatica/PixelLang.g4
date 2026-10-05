@@ -50,7 +50,7 @@ SINO        : 'sino' ;
 SIMULAR     : 'simular' ;
 ENTERO      : 'entero' ;
 REAL        : 'real' ;
-LOGICO      : 'logico' | 'lógico' ;
+LOGICO      : 'logico' | 'l\u00F3gico' ;
 VERDADERO   : 'verdadero' ;
 FALSO       : 'falso' ;
 
@@ -87,4 +87,4 @@ COMENTARIO_BLOQUE : '/*' .*? '*/' -> skip ;
 ESPACIOS          : [ \t\r\n]+ -> skip ;
 
 fragment DIGITO : [0-9] ;
-fragment LETRA  : [a-zA-Z_áéíóúÁÉÍÓÚñÑüÜ] ;
+fragment LETRA  : [a-zA-Z_\u00E1\u00E9\u00ED\u00F3\u00FA\u00C1\u00C9\u00CD\u00D3\u00DA\u00F1\u00D1\u00FC\u00DC] ;
