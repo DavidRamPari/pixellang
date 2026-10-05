@@ -63,4 +63,4 @@ for ruta in sorted(glob.glob(os.path.join(AQUI, "..", "pruebas", "sintactico", "
         glc = "acepta"
     except LarkError:
         glc = "rechaza"
-    print(f"{ruta.split('/')[-1]:<36} ANTLR {'rechaza' if err_antlr else 'acepta'}  GLC {glc}")
+    print(f"{os.path.basename(ruta):<36} ANTLR {'rechaza' if err_antlr else 'acepta'}  GLC {glc}")
