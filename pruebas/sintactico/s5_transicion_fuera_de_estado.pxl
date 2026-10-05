@@ -1,0 +1,5 @@
+personaje Caballero {
+    eventos recibir_golpe;
+    cuando recibir_golpe -> Aturdido;
+    inicial estado Reposo { }
+}

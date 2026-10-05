@@ -1,0 +1,4 @@
+personaje Caballero {
+    eventos recibir_golpe;
+    inicial estado { cuando recibir_golpe -> Reposo; }
+}

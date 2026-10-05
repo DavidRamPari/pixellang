@@ -1,0 +1,12 @@
+personaje Caballero {
+    vida: entero = 100;
+    eventos recibir_golpe, fin_aturdimiento;
+    inicial estado Reposo { cuando recibir_golpe -> Aturdido; }
+    estado Aturdido {
+        al_entrar { vida = vida - 25; }
+        cuando recibir_golpe -> Aturdido;
+        cuando fin_aturdimiento -> Reposo;
+        cuando fin_aturdimiento si vida <= 0 -> Derrotado;
+    }
+    final estado Derrotado { }
+}

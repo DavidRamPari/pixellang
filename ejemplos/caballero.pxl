@@ -1,0 +1,44 @@
+personaje Caballero {
+    vida: entero = 100;
+    daño_golpe: entero = 25;
+    velocidad: real = 0.0;
+    y: real = 0.0;
+
+    eventos saltar, atacar, aterrizar, fin_ataque, recibir_golpe, fin_aturdimiento;
+
+    inicial estado Reposo {
+        al_entrar { velocidad = 0.0; y = 0.0; }
+        cuando saltar -> Saltando;
+        cuando atacar -> Atacando;
+        cuando recibir_golpe -> Aturdido;
+    }
+
+    estado Saltando {
+        al_entrar { y = y + 2.5; }
+        cuando aterrizar -> Reposo;
+        cuando recibir_golpe -> Aturdido;
+    }
+
+    estado Atacando {
+        al_entrar {
+            si vida < 50 { velocidad = 1.0; } sino { velocidad = 1.5; }
+        }
+        cuando fin_ataque -> Reposo;
+        cuando recibir_golpe -> Aturdido;
+    }
+
+    estado Aturdido {
+        al_entrar { vida = vida - daño_golpe; velocidad = 0.0; }
+        cuando recibir_golpe -> Aturdido;
+        cuando fin_aturdimiento si vida <= 0 -> Derrotado;
+        cuando fin_aturdimiento -> Reposo;
+    }
+
+    final estado Derrotado {
+        al_entrar { vida = 0; }
+    }
+}
+
+simular Caballero: saltar, aterrizar, atacar, fin_ataque,
+                   recibir_golpe, recibir_golpe, recibir_golpe, fin_aturdimiento,
+                   atacar, fin_ataque, recibir_golpe, fin_aturdimiento;

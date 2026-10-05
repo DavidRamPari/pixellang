@@ -1,0 +1,8 @@
+personaje Caballero {
+    vida: entero = 100;
+    eventos recibir_golpe;
+    inicial estado Reposo {
+        al_entrar { escudo = 10; }
+        cuando recibir_golpe si energia > 0 -> Reposo;
+    }
+}

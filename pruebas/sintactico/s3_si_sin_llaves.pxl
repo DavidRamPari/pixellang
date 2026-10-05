@@ -1,0 +1,9 @@
+personaje Caballero {
+    vida: entero = 100;
+    velocidad: real = 1.0;
+    eventos recibir_golpe;
+    inicial estado Reposo {
+        al_entrar { si vida < 50 velocidad = 0.5; }
+        cuando recibir_golpe -> Reposo;
+    }
+}

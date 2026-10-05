@@ -1,0 +1,7 @@
+personaje Caballero {
+    vida: entero = 100;
+    vida: real = 50.0;
+    eventos saltar, recibir_golpe, recibir_golpe;
+    inicial estado Reposo { cuando saltar -> saltar; }
+    estado saltar { cuando recibir_golpe -> Reposo; }
+}

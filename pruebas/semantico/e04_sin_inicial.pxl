@@ -1,0 +1,14 @@
+personaje Caballero {
+    eventos saltar, aterrizar;
+    estado Reposo { cuando saltar -> Saltando; }
+    estado Saltando { cuando aterrizar -> Reposo; }
+}
+personaje Slime {
+    eventos recibir_golpe;
+    inicial estado Patrulla {
+        cuando recibir_golpe -> Aplastado;
+    }
+    inicial estado Aplastado {
+        cuando recibir_golpe -> Patrulla;
+    }
+}

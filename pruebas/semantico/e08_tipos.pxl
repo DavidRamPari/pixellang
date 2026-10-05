@@ -1,0 +1,12 @@
+personaje Caballero {
+    vida: entero = 2.5;
+    vivo: logico = verdadero;
+    eventos recibir_golpe;
+    inicial estado Reposo {
+        al_entrar {
+            vida = vivo + 1;
+            si vida { vivo = falso; }
+        }
+        cuando recibir_golpe si vida -> Reposo;
+    }
+}

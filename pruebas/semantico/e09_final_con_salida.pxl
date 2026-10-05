@@ -1,0 +1,9 @@
+personaje Caballero {
+    eventos recibir_golpe, revivir;
+    inicial estado Reposo {
+        cuando recibir_golpe -> Derrotado;
+    }
+    final estado Derrotado {
+        cuando revivir -> Reposo;
+    }
+}

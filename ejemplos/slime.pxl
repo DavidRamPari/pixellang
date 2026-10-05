@@ -1,0 +1,30 @@
+personaje Slime {
+    vida: entero = 30;
+    daño_golpe: entero = 10;
+
+    eventos ver_jugador, perder_jugador, recibir_golpe, fin_aturdimiento;
+
+    inicial estado Patrulla {
+        cuando ver_jugador -> Persecucion;
+        cuando recibir_golpe -> Aturdido;
+    }
+
+    estado Persecucion {
+        cuando perder_jugador -> Patrulla;
+        cuando recibir_golpe -> Aturdido;
+    }
+
+    estado Aturdido {
+        al_entrar { vida = vida - daño_golpe; }
+        cuando recibir_golpe -> Aturdido;
+        cuando fin_aturdimiento si vida <= 0 -> Aplastado;
+        cuando fin_aturdimiento -> Persecucion;
+    }
+
+    final estado Aplastado {
+        al_entrar { vida = 0; }
+    }
+}
+
+simular Slime: ver_jugador, recibir_golpe, fin_aturdimiento,
+               recibir_golpe, recibir_golpe, fin_aturdimiento;

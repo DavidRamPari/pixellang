@@ -1,0 +1,3 @@
+daño_golpe: entero = 25;
+vivo: lógico = verdadero;
+cuando fin_aturdimiento si vida <= 0 -> Derrotado; // comentario

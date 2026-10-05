@@ -1,0 +1,4 @@
+personaje Caballero {
+    vida: entero = 100;
+    inicial estado Reposo { }
+}

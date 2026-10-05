@@ -1,0 +1,6 @@
+personaje Caballero {
+    eventos saltar, aterrizar;
+    inicial estado Reposo { cuando saltar -> Saltando; }
+    estado Saltando { cuando caer -> Reposo; }
+}
+simular Caballero: saltar, aterrizar, agacharse;

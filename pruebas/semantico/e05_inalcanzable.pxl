@@ -1,0 +1,6 @@
+personaje Caballero {
+    eventos saltar, aterrizar, nadar;
+    inicial estado Reposo { cuando saltar -> Saltando; }
+    estado Saltando { cuando aterrizar -> Reposo; }
+    estado Nadando { cuando aterrizar -> Reposo; }
+}
