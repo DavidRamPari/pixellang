@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "PixelLang: analizar el archivo abierto",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "args": ["${file}", "--tokens", "--arbol", "--simular"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Generar parser (ANTLR)"
+    },
+    {
+      "name": "PixelLang: correr todas las pruebas",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/pruebas/correr_pruebas.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Generar parser (ANTLR)"
+    }
+  ]
+}
