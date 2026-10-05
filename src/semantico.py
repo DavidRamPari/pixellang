@@ -121,7 +121,7 @@ class AnalizadorSemantico:
 
     def atributo(self, tabla, ctx):
         nombre = ctx.ID().getText()
-        tipo = ctx.tipo().getText()
+        tipo = "logico" if ctx.tipo().LOGICO() else ctx.tipo().getText()
         tipo_valor = self.tipo_expr(tabla, ctx.expr())
         if not self.compatible(tipo, tipo_valor):
             self.error(ctx.start.line, "E08",
