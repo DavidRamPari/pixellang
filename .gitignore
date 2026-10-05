@@ -1,0 +1,4 @@
+src/generado/
+__pycache__/
+.venv/
+*.jar
