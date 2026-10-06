@@ -13,6 +13,14 @@ Trabajo Parcial de Teoría de Compiladores, Universidad Peruana de Ciencias Apli
 | U20241D937 | Quito Anccasi, Antony Rodrigo |
 | U202412516 | Monge Jiménez, Mateo Alonso |
 
+## Entrega del trabajo parcial
+
+| Entregable | Enlace |
+|---|---|
+| Informe | [docs/PixelLang_Hito1.pdf](docs/PixelLang_Hito1.pdf) |
+| Presentación | [docs/PixelLang_Presentacion.pdf](docs/PixelLang_Presentacion.pdf) |
+| Video de demostración | [Google Drive](https://drive.google.com/file/d/1asrzQjXH87vR6JPZDanqDFVFOEntwdZ8/view?usp=sharing) |
+
 ## Ejemplo
 
 ```
