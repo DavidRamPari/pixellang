@@ -14,12 +14,13 @@ for carpeta in ("lexico", "sintactico", "semantico"):
         print(f"== {carpeta}/{os.path.basename(ruta)}")
         if carpeta == "lexico":
             sys.path.insert(0, os.path.join(AQUI, "..", "src"))
-            from frontend import tokens
+            from frontend import tokens, formatear
             lista, errores = tokens(open(ruta, encoding="utf-8").read())
             for nombre, lexema, linea in lista:
                 print(f"   {linea:<4} {nombre:<12} {lexema}")
             for tipo, linea, col, msg in errores:
-                print(f"   Error {tipo} en {linea}:{col}: {msg}")
+                for texto in formatear(f"Error {tipo} en la línea {linea}, columna {col}:", msg):
+                    print("   " + texto)
         else:
             r = subprocess.run([sys.executable, MAIN, ruta], capture_output=True, text=True, encoding="utf-8")
             print("   " + r.stdout.strip().replace("\n", "\n   "))
