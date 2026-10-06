@@ -70,5 +70,5 @@ Las tareas de cada hito están en los [issues](https://github.com/DavidRamPari/p
 | Hito | Contenido | Estado |
 |---|---|---|
 | 1 | Léxico, gramáticas y derivaciones, lexer y parser en ANTLR4, análisis semántico | Terminado |
-| 2 | Mensajes de error propios, arquitectura y plan de validación | Pendiente |
+| 2 | Errores semánticos, arquitectura del compilador y plan de validación | Pendiente |
 | 3 | Generación de código con LLVM | Pendiente |
