@@ -3,7 +3,6 @@ import sys
 
 from frontend import tokens, analizar, arbol_indentado, formatear
 from semantico import AnalizadorSemantico
-from simulador import Simulador
 
 
 def imprimir_tabla(sem):
@@ -29,8 +28,6 @@ def main():
     ap.add_argument("--tokens", action="store_true", help="muestra los tokens")
     ap.add_argument("--arbol", action="store_true", help="muestra el árbol sintáctico")
     ap.add_argument("--tabla", action="store_true", help="muestra la tabla de símbolos")
-    ap.add_argument("--simular", action="store_true",
-                    help="ejecuta los bloques simular si no hay errores")
     args = ap.parse_args()
 
     with open(args.archivo, encoding="utf-8") as f:
@@ -65,9 +62,6 @@ def main():
         return 1
 
     print("Sin errores léxicos, sintácticos ni semánticos.")
-    if args.simular:
-        for linea in Simulador(arbol).ejecutar_todo():
-            print(linea)
     return 0
 
 

@@ -2,7 +2,7 @@
 
 Esta guía está pensada para Windows 10 u 11. Al final hay una sección con los cambios para WSL, Linux o macOS.
 
-En este hito, compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`, que hace el análisis léxico, sintáctico y semántico de un programa `.pxl`. Como opción adicional, `--simular` ejecuta los bloques `simular` de un programa sin errores. El ejecutable nativo con LLVM corresponde al hito 3.
+En este hito, compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`, que hace el análisis léxico, sintáctico y semántico de un programa `.pxl`. La generación de código con LLVM corresponde al hito 3.
 
 ## 1. Programas necesarios
 
@@ -79,7 +79,6 @@ python src/main.py ejemplos/caballero.pxl
 python src/main.py ejemplos/caballero.pxl --tokens
 python src/main.py ejemplos/caballero.pxl --arbol
 python src/main.py ejemplos/caballero.pxl --tabla
-python src/main.py ejemplos/caballero.pxl --simular
 ```
 
 | Opción | Qué muestra |
@@ -88,16 +87,21 @@ python src/main.py ejemplos/caballero.pxl --simular
 | `--tokens` | la lista de tokens: línea, nombre del token y lexema |
 | `--arbol` | el árbol sintáctico, un nodo por línea |
 | `--tabla` | la tabla de símbolos: el ámbito global con los personajes y el ámbito de cada personaje con sus atributos, eventos y estados |
-| `--simular` | la traza de los bloques `simular`: evento, estado al que pasa y atributos |
 
-Las opciones se pueden combinar. Los errores semánticos indican el código, la línea y la columna (contada desde 0, como en ANTLR). Para un programa correcto, `--simular` empieza así:
+Las opciones se pueden combinar. Los errores semánticos indican el código, la línea y la columna (contada desde 0, como en ANTLR). Para `ejemplos/caballero.pxl`, `--tabla` empieza así:
 
 ```
-Sin errores léxicos, sintácticos ni semánticos.
-simular Caballero
-  inicio            -> Reposo       vida=100 velocidad=0.0 y=0.0
-  saltar            -> Saltando     vida=100 velocidad=0.0 y=2.5
+Ámbito global
+NOMBRE             CATEGORÍA  TIPO O MODIFICADOR  LÍNEA
+Caballero          personaje                      1
+
+Ámbito de Caballero
+NOMBRE             CATEGORÍA  TIPO O MODIFICADOR  LÍNEA
+vida               atributo   entero              2
+daño_golpe         atributo   entero              3
 ```
+
+Si el programa no tiene errores, la salida termina con `Sin errores léxicos, sintácticos ni semánticos.`
 
 Para probar un programa propio, crea un archivo `.pxl` y pásalo como argumento.
 
@@ -105,10 +109,10 @@ Para probar un programa propio, crea un archivo `.pxl` y pásalo como argumento.
 
 El archivo `.vscode/launch.json` tiene dos configuraciones, que aparecen en la pestaña **Run and Debug** (Ctrl+Shift+D):
 
-- **PixelLang: analizar el archivo abierto**: abre cualquier archivo `.pxl`, elige esta configuración y presiona F5. Primero se regenera el parser y luego se ejecuta `main.py` con `--tokens --arbol --simular` sobre ese archivo.
+- **PixelLang: analizar el archivo abierto**: abre cualquier archivo `.pxl`, elige esta configuración y presiona F5. Primero se regenera el parser y luego se ejecuta `main.py` con `--tokens --arbol --tabla` sobre ese archivo.
 - **PixelLang: correr todas las pruebas**: ejecuta `pruebas/correr_pruebas.py`.
 
-Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` o `src/simulador.py` para ver cómo se llena la tabla de símbolos o cómo avanza la simulación.
+Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` para ver cómo el visitor llena la tabla de símbolos.
 
 ## 9. Pruebas
 

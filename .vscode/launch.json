@@ -6,7 +6,7 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/main.py",
-      "args": ["${file}", "--tokens", "--arbol", "--simular"],
+      "args": ["${file}", "--tokens", "--arbol", "--tabla"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "preLaunchTask": "Generar parser (ANTLR)"

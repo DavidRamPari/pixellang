@@ -38,7 +38,7 @@ py -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o src/generado -Xexact-output-dir gramatica/PixelLang.g4
-python src/main.py ejemplos/caballero.pxl --tokens --arbol
+python src/main.py ejemplos/caballero.pxl --tokens --arbol --tabla
 python pruebas/correr_pruebas.py
 ```
 
@@ -48,7 +48,6 @@ python pruebas/correr_pruebas.py
 | `--tokens` | la lista de tokens |
 | `--arbol` | el árbol sintáctico |
 | `--tabla` | la tabla de símbolos de cada ámbito |
-| `--simular` | la traza de los bloques `simular` (opcional) |
 
 ## Estructura
 
@@ -58,7 +57,6 @@ python pruebas/correr_pruebas.py
 | `src/main.py` | Driver |
 | `src/frontend.py` | Lexer y parser con recolección de errores |
 | `src/semantico.py` | Visitor semántico: tabla de símbolos y errores E01 a E10 |
-| `src/simulador.py` | Ejecución de los bloques `simular` |
 | `ejemplos/` | Programas de ejemplo |
 | `pruebas/` | Pruebas léxicas, sintácticas y semánticas |
 | `.vscode/` | Tarea para generar el parser y configuraciones de ejecución |
