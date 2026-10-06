@@ -6,6 +6,21 @@ from semantico import AnalizadorSemantico
 from simulador import Simulador
 
 
+def imprimir_tabla(sem):
+    encabezado = f"{'NOMBRE':<18} {'CATEGORÍA':<10} {'TIPO O MODIFICADOR':<19} LÍNEA"
+    print("Ámbito global")
+    print(encabezado)
+    for s in sem.tabla_global.simbolos():
+        print(f"{s.nombre:<18} {s.categoria:<10} {'':<19} {s.linea}")
+    for p in sem.tabla_global.simbolos("personaje"):
+        print()
+        print(f"Ámbito de {p.nombre}")
+        print(encabezado)
+        for nombre, categoria, detalle, linea, _ in p.ambito.mostrar():
+            print(f"{nombre:<18} {categoria:<10} {detalle:<19} {linea}")
+    print()
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -13,6 +28,7 @@ def main():
     ap.add_argument("archivo")
     ap.add_argument("--tokens", action="store_true", help="muestra los tokens")
     ap.add_argument("--arbol", action="store_true", help="muestra el árbol sintáctico")
+    ap.add_argument("--tabla", action="store_true", help="muestra la tabla de símbolos")
     ap.add_argument("--simular", action="store_true",
                     help="ejecuta los bloques simular si no hay errores")
     args = ap.parse_args()
@@ -39,10 +55,12 @@ def main():
 
     sem = AnalizadorSemantico()
     sem.analizar(arbol)
-    for linea, msg in sem.advertencias:
-        print("\n".join(formatear(f"Advertencia en la línea {linea}:", msg)))
-    for linea, codigo, msg in sem.errores:
-        print("\n".join(formatear(f"Error semántico {codigo} en la línea {linea}:", msg)))
+    if args.tabla:
+        imprimir_tabla(sem)
+    for linea, col, msg in sem.advertencias:
+        print("\n".join(formatear(f"Advertencia en la línea {linea}, columna {col}:", msg)))
+    for linea, col, codigo, msg in sem.errores:
+        print("\n".join(formatear(f"Error semántico {codigo} en la línea {linea}, columna {col}:", msg)))
     if sem.errores:
         return 1
 

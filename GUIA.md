@@ -78,6 +78,7 @@ Desde VS Code también se puede hacer con **Ctrl+Shift+B**, que ejecuta la tarea
 python src/main.py ejemplos/caballero.pxl
 python src/main.py ejemplos/caballero.pxl --tokens
 python src/main.py ejemplos/caballero.pxl --arbol
+python src/main.py ejemplos/caballero.pxl --tabla
 python src/main.py ejemplos/caballero.pxl --simular
 ```
 
@@ -86,9 +87,10 @@ python src/main.py ejemplos/caballero.pxl --simular
 | sin opciones | si el programa tiene errores léxicos, sintácticos o semánticos |
 | `--tokens` | la lista de tokens: línea, nombre del token y lexema |
 | `--arbol` | el árbol sintáctico, un nodo por línea |
+| `--tabla` | la tabla de símbolos: el ámbito global con los personajes y el ámbito de cada personaje con sus atributos, eventos y estados |
 | `--simular` | la traza de los bloques `simular`: evento, estado al que pasa y atributos |
 
-Las opciones se pueden combinar. Para un programa correcto, `--simular` empieza así:
+Las opciones se pueden combinar. Los errores semánticos indican el código, la línea y la columna (contada desde 0, como en ANTLR). Para un programa correcto, `--simular` empieza así:
 
 ```
 Sin errores léxicos, sintácticos ni semánticos.

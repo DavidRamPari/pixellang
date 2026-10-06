@@ -1,7 +1,17 @@
-from collections import deque
-from dataclasses import dataclass, field
+"""Análisis semántico de PixelLang.
 
-from frontend import PixelLangParser as P
+Como en los laboratorios 4 y 5, un visitor recorre el árbol sintáctico que
+genera ANTLR: al visitar una declaración inserta el símbolo en la tabla y al
+visitar un uso lo busca. Los errores se acumulan para reportarlos juntos.
+"""
+from collections import deque
+from dataclasses import dataclass
+
+from antlr4 import ParserRuleContext
+from antlr4.tree.Tree import TerminalNode
+
+import frontend  # noqa: F401  agrega src/generado al path de Python
+from PixelLangVisitor import PixelLangVisitor
 
 ERRORES = {
     "E01": "Transición hacia un estado no declarado",
@@ -19,285 +29,358 @@ ERRORES = {
 NUMERICOS = ("entero", "real")
 
 
+def tipo_aritmetico(tipos):
+    """Si algún operando es real, el resultado es real; si no, es entero."""
+    return "real" if "real" in tipos else "entero"
+
+
+def se_puede_asignar(destino, origen):
+    """Un entero se puede asignar a un real, pero un real no a un entero."""
+    if "error" in (destino, origen):
+        return True
+    return destino == origen or (destino == "real" and origen == "entero")
+
+
+def posicion(nodo):
+    """Línea y columna de un token, de una hoja del árbol o de una regla."""
+    if isinstance(nodo, TerminalNode):
+        nodo = nodo.getSymbol()
+    elif isinstance(nodo, ParserRuleContext):
+        nodo = nodo.start
+    return nodo.line, nodo.column
+
+
 @dataclass
 class Simbolo:
     nombre: str
-    categoria: str
+    categoria: str               # personaje, atributo, evento o estado
     linea: int
-    tipo: str = None
-    modificador: str = None
+    columna: int
+    tipo: str = None             # tipo de un atributo
+    modificador: str = None      # inicial o final, en un estado
+    ambito: "TablaSimbolos" = None   # en un personaje, la tabla de su ámbito
 
 
-@dataclass
-class TablaPersonaje:
-    nombre: str
-    linea: int
-    atributos: dict = field(default_factory=dict)
-    eventos: dict = field(default_factory=dict)
-    estados: dict = field(default_factory=dict)
-    transiciones: list = field(default_factory=list)
-    inicial: str = None
+class TablaSimbolos:
+    """Tabla de símbolos de un ámbito.
+
+    PixelLang tiene dos niveles de ámbito: el global, con los personajes, y el
+    de cada personaje, con sus atributos, eventos y estados. Cada categoría se
+    guarda aparte, pero dentro de un ámbito un nombre identifica una sola cosa.
+    """
+
+    def __init__(self, nombre, categorias, padre=None):
+        self.nombre = nombre
+        self.padre = padre
+        self.espacios = {c: {} for c in categorias}
+
+    def declarar(self, simbolo):
+        """Inserta el símbolo y devuelve el símbolo con el que choca, o None."""
+        espacio = self.espacios[simbolo.categoria]
+        if simbolo.nombre in espacio:
+            return espacio[simbolo.nombre]
+        previo = self.buscar_local(simbolo.nombre)
+        espacio[simbolo.nombre] = simbolo
+        return previo
+
+    def buscar_local(self, nombre, categoria=None):
+        categorias = [categoria] if categoria else list(self.espacios)
+        for c in categorias:
+            if nombre in self.espacios.get(c, {}):
+                return self.espacios[c][nombre]
+        return None
+
+    def buscar(self, nombre, categoria=None):
+        """Busca en este ámbito y, si no lo encuentra, en los ámbitos externos."""
+        simbolo = self.buscar_local(nombre, categoria)
+        if simbolo is None and self.padre is not None:
+            return self.padre.buscar(nombre, categoria)
+        return simbolo
+
+    def simbolos(self, categoria=None):
+        categorias = [categoria] if categoria else list(self.espacios)
+        return [s for c in categorias for s in self.espacios[c].values()]
+
+    def mostrar(self):
+        return [(s.nombre, s.categoria, s.tipo or s.modificador or "", s.linea, s.columna)
+                for s in self.simbolos()]
 
 
-class AnalizadorSemantico:
+class AnalizadorSemantico(PixelLangVisitor):
     def __init__(self):
-        self.personajes = {}
+        self.tabla_global = TablaSimbolos("global", ("personaje",))
+        self.tabla = None            # ámbito del personaje que se está visitando
+        self.estado = None           # estado cuyas transiciones se visitan
+        self.sin_guarda = {}
+        self.transiciones = []
+        self.inicial = None
         self.errores = []
         self.advertencias = []
 
-    def error(self, linea, codigo, mensaje):
-        self.errores.append((linea, codigo, mensaje))
+    def error(self, pos, codigo, mensaje):
+        self.errores.append((*pos, codigo, mensaje))
 
-    def advertir(self, linea, mensaje):
-        self.advertencias.append((linea, mensaje))
-
-    @staticmethod
-    def compatible(destino, origen):
-        if "error" in (destino, origen):
-            return True
-        return destino == origen or (destino == "real" and origen == "entero")
+    def advertir(self, pos, mensaje):
+        self.advertencias.append((*pos, mensaje))
 
     def analizar(self, arbol):
-        for pj in arbol.personaje():
-            self.personaje(pj)
-        for sim in arbol.simulacion():
-            self.simulacion(sim)
+        self.visit(arbol)
         self.errores.sort(key=lambda e: e[0])
         self.advertencias.sort(key=lambda a: a[0])
         return self.errores
 
-    def personaje(self, ctx):
+    # Declaraciones ---------------------------------------------------------
+
+    def visitPrograma(self, ctx):
+        for pj in ctx.personaje():
+            self.visit(pj)
+        for sim in ctx.simulacion():
+            self.visit(sim)
+
+    def visitPersonaje(self, ctx):
         nombre = ctx.ID().getText()
-        linea = ctx.start.line
-        if nombre in self.personajes:
-            previo = self.personajes[nombre].linea
-            self.error(linea, "E06",
-                       f"el personaje '{nombre}' ya fue declarado en la línea {previo}")
+        tabla = TablaSimbolos(nombre, ("atributo", "evento", "estado"), self.tabla_global)
+        previo = self.tabla_global.declarar(
+            Simbolo(nombre, "personaje", *posicion(ctx.ID()), ambito=tabla))
+        if previo:
+            self.error(posicion(ctx.ID()), "E06",
+                       f"el personaje '{nombre}' ya fue declarado en la línea {previo.linea}")
             return
-        tabla = TablaPersonaje(nombre, linea)
-        self.personajes[nombre] = tabla
 
+        self.tabla, self.transiciones, self.inicial = tabla, [], None   # entra al ámbito
         for atr in ctx.atributo():
-            self.atributo(tabla, atr)
-        for ev in ctx.eventos().ID():
-            self.declarar(tabla, tabla.eventos, ev.getText(), "evento", ev.symbol.line)
+            self.visit(atr)
+        self.visit(ctx.eventos())
+        # Primero se registran todos los estados, porque una transición puede
+        # ir hacia un estado que se declara más abajo.
         for est in ctx.estado():
-            mod = est.modificador().getText() if est.modificador() else None
-            self.declarar(tabla, tabla.estados, est.ID().getText(), "estado",
-                          est.start.line, modificador=mod)
+            self.declarar_estado(est)
+        self.revisar_inicial(ctx)
+        for est in ctx.estado():
+            self.visit(est)
+        self.revisar_alcanzables()
+        self.tabla = None                                               # sale del ámbito
 
-        iniciales = [s for s in tabla.estados.values() if s.modificador == "inicial"]
-        if not iniciales:
-            self.error(linea, "E04",
-                       f"el personaje '{nombre}' no tiene estado inicial")
-        elif len(iniciales) > 1:
-            lista = ", ".join(f"'{s.nombre}'" for s in iniciales)
-            self.error(iniciales[1].linea, "E04",
-                       f"el personaje '{nombre}' tiene más de un estado inicial: {lista}")
+    def declarar(self, simbolo):
+        previo = self.tabla.declarar(simbolo)
+        if previo is None:
+            return
+        if previo.categoria == simbolo.categoria:
+            mensaje = (f"el {simbolo.categoria} '{simbolo.nombre}' ya fue declarado "
+                       f"en la línea {previo.linea}")
         else:
-            tabla.inicial = iniciales[0].nombre
+            mensaje = (f"'{simbolo.nombre}' ya es el nombre de un {previo.categoria} "
+                       f"(línea {previo.linea}); un nombre no puede usarse para dos "
+                       f"cosas distintas")
+        self.error((simbolo.linea, simbolo.columna), "E06", mensaje)
 
-        for est in ctx.estado():
-            self.cuerpo_estado(tabla, est)
-
-        self.alcanzabilidad(tabla)
-
-    def declarar(self, tabla, espacio, nombre, categoria, linea, **extra):
-        if nombre in espacio:
-            previo = espacio[nombre].linea
-            self.error(linea, "E06",
-                       f"el {categoria} '{nombre}' ya fue declarado en la línea {previo}")
-            return False
-        for otro in (tabla.atributos, tabla.eventos, tabla.estados):
-            if otro is not espacio and nombre in otro:
-                previo = otro[nombre]
-                self.error(linea, "E06",
-                           f"'{nombre}' ya es el nombre de un {previo.categoria} "
-                           f"(línea {previo.linea}); un nombre no puede usarse "
-                           f"para dos cosas distintas")
-                break
-        espacio[nombre] = Simbolo(nombre, categoria, linea, **extra)
-        return True
-
-    def atributo(self, tabla, ctx):
+    def visitAtributo(self, ctx):
         nombre = ctx.ID().getText()
         tipo = "logico" if ctx.tipo().LOGICO() else ctx.tipo().getText()
-        tipo_valor = self.tipo_expr(tabla, ctx.expr())
-        if not self.compatible(tipo, tipo_valor):
-            self.error(ctx.start.line, "E08",
+        tipo_valor = self.visit(ctx.expr())
+        if not se_puede_asignar(tipo, tipo_valor):
+            self.error(posicion(ctx), "E08",
                        f"el atributo '{nombre}' es {tipo} y se inicializa con un valor {tipo_valor}")
-        self.declarar(tabla, tabla.atributos, nombre, "atributo", ctx.start.line, tipo=tipo)
+        self.declarar(Simbolo(nombre, "atributo", *posicion(ctx.ID()), tipo=tipo))
 
-    def cuerpo_estado(self, tabla, ctx):
-        origen = ctx.ID().getText()
-        mod = ctx.modificador().getText() if ctx.modificador() else None
+    def visitEventos(self, ctx):
+        for ev in ctx.ID():
+            self.declarar(Simbolo(ev.getText(), "evento", *posicion(ev)))
+
+    def declarar_estado(self, ctx):
+        modificador = ctx.modificador().getText() if ctx.modificador() else None
+        self.declarar(Simbolo(ctx.ID().getText(), "estado", *posicion(ctx.ID()),
+                              modificador=modificador))
+
+    def revisar_inicial(self, ctx):
+        iniciales = [s for s in self.tabla.simbolos("estado") if s.modificador == "inicial"]
+        if not iniciales:
+            self.error(posicion(ctx.ID()), "E04",
+                       f"el personaje '{self.tabla.nombre}' no tiene estado inicial")
+        elif len(iniciales) > 1:
+            lista = ", ".join(f"'{s.nombre}'" for s in iniciales)
+            self.error((iniciales[1].linea, iniciales[1].columna), "E04",
+                       f"el personaje '{self.tabla.nombre}' tiene más de un estado inicial: {lista}")
+        else:
+            self.inicial = iniciales[0].nombre
+
+    # Estados, transiciones y acciones --------------------------------------
+
+    def visitEstado(self, ctx):
+        self.estado = ctx.ID().getText()
+        self.sin_guarda = {}
         if ctx.alEntrar():
-            self.bloque(tabla, ctx.alEntrar().bloque())
-
-        sin_guarda = {}
+            self.visit(ctx.alEntrar())
         for tr in ctx.transicion():
-            evento, destino = tr.ID(0).getText(), tr.ID(1).getText()
-            linea = tr.start.line
-            if evento not in tabla.eventos:
-                self.error(linea, "E02",
-                           f"el evento '{evento}' no está declarado en '{tabla.nombre}'")
-            if destino not in tabla.estados:
-                self.error(linea, "E01",
-                           f"la transición de '{origen}' con '{evento}' va hacia "
-                           f"'{destino}', que no es un estado declarado")
-            if tr.guarda():
-                t = self.tipo_expr(tabla, tr.guarda().expr())
-                if t not in ("logico", "error"):
-                    self.error(linea, "E08",
-                               f"la guarda de la transición debe ser logico, no {t}")
-            if evento in sin_guarda:
-                self.error(linea, "E03",
-                           f"en '{origen}', la transición con '{evento}' de la línea "
-                           f"{linea} nunca se toma: la de la línea {sin_guarda[evento]} "
-                           f"responde al mismo evento sin guarda")
-            elif not tr.guarda():
-                sin_guarda[evento] = linea
-            tabla.transiciones.append((origen, evento, tr.guarda() is not None,
-                                       destino, linea))
-
-        if mod == "final" and ctx.transicion():
-            self.error(ctx.start.line, "E09",
-                       f"'{origen}' es un estado final y no puede tener transiciones")
-        if mod != "final" and not ctx.transicion():
-            self.advertir(ctx.start.line,
-                          f"'{origen}' no tiene transiciones de salida y no es final: "
+            self.visit(tr)
+        modificador = ctx.modificador().getText() if ctx.modificador() else None
+        if modificador == "final" and ctx.transicion():
+            self.error(posicion(ctx.ID()), "E09",
+                       f"'{self.estado}' es un estado final y no puede tener transiciones")
+        if modificador != "final" and not ctx.transicion():
+            self.advertir(posicion(ctx.ID()),
+                          f"'{self.estado}' no tiene transiciones de salida y no es final: "
                           f"el personaje quedaría atrapado ahí")
 
-    def alcanzabilidad(self, tabla):
-        if tabla.inicial is None:
+    def visitTransicion(self, ctx):
+        evento, destino = ctx.ID(0).getText(), ctx.ID(1).getText()
+        linea = ctx.start.line
+        if self.tabla.buscar(evento, "evento") is None:
+            self.error(posicion(ctx.ID(0)), "E02",
+                       f"el evento '{evento}' no está declarado en '{self.tabla.nombre}'")
+        if self.tabla.buscar(destino, "estado") is None:
+            self.error(posicion(ctx.ID(1)), "E01",
+                       f"la transición de '{self.estado}' con '{evento}' va hacia "
+                       f"'{destino}', que no es un estado declarado")
+        if ctx.guarda():
+            t = self.visit(ctx.guarda().expr())
+            if t not in ("logico", "error"):
+                self.error(posicion(ctx.guarda().expr()), "E08",
+                           f"la guarda de la transición debe ser logico, no {t}")
+        if evento in self.sin_guarda:
+            self.error(posicion(ctx), "E03",
+                       f"en '{self.estado}', la transición con '{evento}' de la línea "
+                       f"{linea} nunca se toma: la de la línea {self.sin_guarda[evento]} "
+                       f"responde al mismo evento sin guarda")
+        elif not ctx.guarda():
+            self.sin_guarda[evento] = linea
+        self.transiciones.append((self.estado, destino))
+
+    def revisar_alcanzables(self):
+        if self.inicial is None:
             return
         vecinos = {}
-        for origen, _, _, destino, _ in tabla.transiciones:
+        for origen, destino in self.transiciones:
             vecinos.setdefault(origen, []).append(destino)
-        visitados = {tabla.inicial}
-        cola = deque([tabla.inicial])
+        visitados = {self.inicial}
+        cola = deque([self.inicial])
         while cola:
             q = cola.popleft()
             for r in vecinos.get(q, []):
-                if r in tabla.estados and r not in visitados:
+                if self.tabla.buscar_local(r, "estado") and r not in visitados:
                     visitados.add(r)
                     cola.append(r)
-        for nombre, sim in tabla.estados.items():
-            if nombre not in visitados:
-                self.error(sim.linea, "E05",
-                           f"el estado '{nombre}' no es alcanzable desde "
-                           f"'{tabla.inicial}'")
+        for s in self.tabla.simbolos("estado"):
+            if s.nombre not in visitados:
+                self.error((s.linea, s.columna), "E05",
+                           f"el estado '{s.nombre}' no es alcanzable desde '{self.inicial}'")
 
-    def bloque(self, tabla, ctx):
-        for s in ctx.sentencia():
-            if isinstance(s, P.AsignacionContext):
-                nombre = s.ID().getText()
-                t_valor = self.tipo_expr(tabla, s.expr())
-                if nombre not in tabla.atributos:
-                    self.error(s.start.line, "E07",
-                               f"'{nombre}' no es un atributo de '{tabla.nombre}'")
-                    continue
-                t_var = tabla.atributos[nombre].tipo
-                if not self.compatible(t_var, t_valor):
-                    self.error(s.start.line, "E08",
-                               f"no se puede asignar un valor {t_valor} al atributo "
-                               f"'{nombre}', que es {t_var}")
-            else:
-                t = self.tipo_expr(tabla, s.expr())
-                if t not in ("logico", "error"):
-                    self.error(s.start.line, "E08",
-                               f"la condición de 'si' debe ser logico, no {t}")
-                for b in s.bloque():
-                    self.bloque(tabla, b)
-
-    def simulacion(self, ctx):
-        nombre = ctx.ID(0).getText()
-        if nombre not in self.personajes:
-            self.error(ctx.start.line, "E10",
-                       f"no existe un personaje llamado '{nombre}'")
+    def visitAsignacion(self, ctx):
+        nombre = ctx.ID().getText()
+        tipo_valor = self.visit(ctx.expr())
+        simbolo = self.tabla.buscar(nombre, "atributo")
+        if simbolo is None:
+            self.error(posicion(ctx.ID()), "E07",
+                       f"'{nombre}' no es un atributo de '{self.tabla.nombre}'")
             return
-        tabla = self.personajes[nombre]
+        if not se_puede_asignar(simbolo.tipo, tipo_valor):
+            self.error(posicion(ctx), "E08",
+                       f"no se puede asignar un valor {tipo_valor} al atributo "
+                       f"'{nombre}', que es {simbolo.tipo}")
+
+    def visitSeleccion(self, ctx):
+        t = self.visit(ctx.expr())
+        if t not in ("logico", "error"):
+            self.error(posicion(ctx.expr()), "E08",
+                       f"la condición de 'si' debe ser logico, no {t}")
+        for b in ctx.bloque():
+            self.visit(b)
+
+    def visitSimulacion(self, ctx):
+        nombre = ctx.ID(0).getText()
+        personaje = self.tabla_global.buscar(nombre, "personaje")
+        if personaje is None:
+            self.error(posicion(ctx.ID(0)), "E10", f"no existe un personaje llamado '{nombre}'")
+            return
         for ev in ctx.ID()[1:]:
-            if ev.getText() not in tabla.eventos:
-                self.error(ev.symbol.line, "E02",
+            if personaje.ambito.buscar(ev.getText(), "evento") is None:
+                self.error(posicion(ev), "E02",
                            f"el evento '{ev.getText()}' no está declarado en '{nombre}'")
 
-    def tipo_expr(self, tabla, ctx):
-        if isinstance(ctx, (P.ExprContext, P.ConjContext)):
-            hijos = ctx.conj() if isinstance(ctx, P.ExprContext) else ctx.rel()
-            tipos = [self.tipo_expr(tabla, h) for h in hijos]
-            if len(tipos) == 1:
-                return tipos[0]
-            op = "||" if isinstance(ctx, P.ExprContext) else "&&"
-            return self.operar_logico(ctx, op, tipos)
-        if isinstance(ctx, P.RelContext):
-            tipos = [self.tipo_expr(tabla, h) for h in ctx.arit()]
-            if len(tipos) == 1:
-                return tipos[0]
-            op = ctx.opRel().getText()
-            a, b = tipos
-            if "error" in tipos:
-                return "logico"
-            if op in ("==", "!="):
-                ok = (a in NUMERICOS and b in NUMERICOS) or a == b
-            else:
-                ok = a in NUMERICOS and b in NUMERICOS
-            if not ok:
-                self.error(ctx.start.line, "E08",
-                           f"no se puede comparar {a} con {b} usando '{op}'")
-            return "logico"
-        if isinstance(ctx, (P.AritContext, P.TermContext)):
-            hijos = ctx.term() if isinstance(ctx, P.AritContext) else ctx.unario()
-            tipos = [self.tipo_expr(tabla, h) for h in hijos]
-            if len(tipos) == 1:
-                return tipos[0]
-            ops = [c.getText() for c in ctx.getChildren()
-                   if c.getText() in ("+", "-", "*", "/") and not hasattr(c, "getRuleIndex")]
-            if "error" in tipos:
-                return "error"
-            malos = [t for t in tipos if t not in NUMERICOS]
-            if malos:
-                self.error(ctx.start.line, "E08",
-                           f"el operador '{ops[0]}' necesita números y recibió {malos[0]}")
-                return "error"
-            return "real" if "real" in tipos else "entero"
-        if isinstance(ctx, P.UnarioContext):
-            if ctx.factor():
-                return self.tipo_expr(tabla, ctx.factor())
-            t = self.tipo_expr(tabla, ctx.unario())
-            op = ctx.getChild(0).getText()
-            if t == "error":
-                return t
-            if op == "!" and t != "logico":
-                self.error(ctx.start.line, "E08", f"'!' necesita un valor logico, no {t}")
-                return "error"
-            if op == "-" and t not in NUMERICOS:
-                self.error(ctx.start.line, "E08", f"'-' necesita un número, no {t}")
-                return "error"
-            return t
-        if isinstance(ctx, P.FactorContext):
-            if ctx.expr():
-                return self.tipo_expr(tabla, ctx.expr())
-            if ctx.NUM_ENTERO():
-                return "entero"
-            if ctx.NUM_REAL():
-                return "real"
-            if ctx.VERDADERO() or ctx.FALSO():
-                return "logico"
-            nombre = ctx.ID().getText()
-            if nombre not in tabla.atributos:
-                self.error(ctx.start.line, "E07",
-                           f"'{nombre}' no es un atributo de '{tabla.nombre}'")
-                return "error"
-            return tabla.atributos[nombre].tipo
-        raise TypeError(type(ctx).__name__)
+    # Expresiones: cada visita devuelve el tipo de la subexpresión -------------
 
-    def operar_logico(self, ctx, op, tipos):
+    def visitExpr(self, ctx):
+        tipos = [self.visit(c) for c in ctx.conj()]
+        return tipos[0] if len(tipos) == 1 else self.logico(ctx, "||", tipos)
+
+    def visitConj(self, ctx):
+        tipos = [self.visit(r) for r in ctx.rel()]
+        return tipos[0] if len(tipos) == 1 else self.logico(ctx, "&&", tipos)
+
+    def logico(self, ctx, op, tipos):
         if "error" in tipos:
             return "logico"
         for t in tipos:
             if t != "logico":
-                self.error(ctx.start.line, "E08",
+                self.error(posicion(ctx), "E08",
                            f"el operador '{op}' necesita valores logico y recibió {t}")
                 break
         return "logico"
+
+    def visitRel(self, ctx):
+        tipos = [self.visit(a) for a in ctx.arit()]
+        if len(tipos) == 1:
+            return tipos[0]
+        op = ctx.opRel().getText()
+        a, b = tipos
+        if "error" in tipos:
+            return "logico"
+        if op in ("==", "!="):
+            valido = (a in NUMERICOS and b in NUMERICOS) or a == b
+        else:
+            valido = a in NUMERICOS and b in NUMERICOS
+        if not valido:
+            self.error(posicion(ctx), "E08", f"no se puede comparar {a} con {b} usando '{op}'")
+        return "logico"
+
+    def visitArit(self, ctx):
+        return self.aritmetica(ctx, ctx.term())
+
+    def visitTerm(self, ctx):
+        return self.aritmetica(ctx, ctx.unario())
+
+    def aritmetica(self, ctx, operandos):
+        tipos = [self.visit(o) for o in operandos]
+        if len(tipos) == 1:
+            return tipos[0]
+        if "error" in tipos:
+            return "error"
+        operadores = [c.getText() for c in ctx.getChildren() if isinstance(c, TerminalNode)]
+        malos = [t for t in tipos if t not in NUMERICOS]
+        if malos:
+            self.error(posicion(ctx), "E08",
+                       f"el operador '{operadores[0]}' necesita números y recibió {malos[0]}")
+            return "error"
+        return tipo_aritmetico(tipos)
+
+    def visitUnario(self, ctx):
+        if ctx.factor():
+            return self.visit(ctx.factor())
+        t = self.visit(ctx.unario())
+        op = ctx.getChild(0).getText()
+        if t == "error":
+            return t
+        if op == "!" and t != "logico":
+            self.error(posicion(ctx), "E08", f"'!' necesita un valor logico, no {t}")
+            return "error"
+        if op == "-" and t not in NUMERICOS:
+            self.error(posicion(ctx), "E08", f"'-' necesita un número, no {t}")
+            return "error"
+        return t
+
+    def visitFactor(self, ctx):
+        if ctx.expr():
+            return self.visit(ctx.expr())
+        if ctx.NUM_ENTERO():
+            return "entero"
+        if ctx.NUM_REAL():
+            return "real"
+        if ctx.VERDADERO() or ctx.FALSO():
+            return "logico"
+        nombre = ctx.ID().getText()
+        simbolo = self.tabla.buscar(nombre, "atributo")
+        if simbolo is None:
+            self.error(posicion(ctx.ID()), "E07",
+                       f"'{nombre}' no es un atributo de '{self.tabla.nombre}'")
+            return "error"
+        return simbolo.tipo
