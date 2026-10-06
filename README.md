@@ -1,6 +1,6 @@
 # PixelLang
 
-Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador verifica que ese autómata esté bien formado antes de ejecutarlo y puede simularlo con una secuencia de eventos.
+Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa y verifica que ese autómata esté bien formado.
 
 Trabajo Parcial de Teoría de Compiladores, Universidad Peruana de Ciencias Aplicadas, 2026.
 
@@ -38,7 +38,7 @@ py -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o src/generado -Xexact-output-dir gramatica/PixelLang.g4
-python src/main.py ejemplos/caballero.pxl --tokens --arbol --simular
+python src/main.py ejemplos/caballero.pxl --tokens --arbol
 python pruebas/correr_pruebas.py
 ```
 
@@ -47,7 +47,7 @@ python pruebas/correr_pruebas.py
 | sin opciones | si el programa tiene errores léxicos, sintácticos o semánticos |
 | `--tokens` | la lista de tokens |
 | `--arbol` | el árbol sintáctico |
-| `--simular` | la traza de los bloques `simular` |
+| `--simular` | la traza de los bloques `simular` (opcional) |
 
 ## Estructura
 
@@ -60,13 +60,15 @@ python pruebas/correr_pruebas.py
 | `src/simulador.py` | Ejecución de los bloques `simular` |
 | `ejemplos/` | Programas de ejemplo |
 | `pruebas/` | Pruebas léxicas, sintácticas y semánticas |
-| `validacion/` | Comparación entre la GLC del informe y la gramática ANTLR |
 | `.vscode/` | Tarea para generar el parser y configuraciones de ejecución |
+| `docs/` | Informe y presentación del trabajo parcial |
 
 ## Avance
 
+Las tareas de cada hito están en los [issues](https://github.com/DavidRamPari/pixellang/issues) y los [hitos](https://github.com/DavidRamPari/pixellang/milestones) del repositorio.
+
 | Hito | Contenido | Estado |
 |---|---|---|
-| 1 | Léxico, gramáticas, parser en ANTLR4, análisis semántico y simulación | Terminado |
+| 1 | Léxico, gramáticas y derivaciones, lexer y parser en ANTLR4, análisis semántico | Terminado |
 | 2 | Mensajes de error propios, arquitectura y plan de validación | Pendiente |
 | 3 | Generación de código con LLVM | Pendiente |

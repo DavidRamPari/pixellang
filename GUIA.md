@@ -2,7 +2,7 @@
 
 Esta guía está pensada para Windows 10 u 11. Al final hay una sección con los cambios para WSL, Linux o macOS.
 
-En este hito, compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`, que hace el análisis léxico, sintáctico y semántico de un programa `.pxl` y, si no hay errores, la simulación. El ejecutable nativo con LLVM corresponde al hito 3.
+En este hito, compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`, que hace el análisis léxico, sintáctico y semántico de un programa `.pxl`. Como opción adicional, `--simular` ejecuta los bloques `simular` de un programa sin errores. El ejecutable nativo con LLVM corresponde al hito 3.
 
 ## 1. Programas necesarios
 
@@ -113,16 +113,12 @@ Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `sr
 ```
 python pruebas/probar_construcciones.py
 python pruebas/correr_pruebas.py
-python validacion/derivar.py
-python validacion/cruzar.py
 ```
 
 | Comando | Resultado esperado |
 |---|---|
 | `probar_construcciones.py` | los 35 ejemplos de las construcciones en `ok` y `fallos: 0` |
 | `correr_pruebas.py` | la salida del compilador para cada prueba léxica, sintáctica y semántica |
-| `validacion/derivar.py` | `ejemplos validados con la GLC: 35` |
-| `validacion/cruzar.py` | `rechazadas por ANTLR: 0` y los seis programas con errores rechazados por ambas gramáticas |
 
 ## 10. Problemas comunes
 
