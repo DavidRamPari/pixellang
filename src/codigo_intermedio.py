@@ -17,7 +17,7 @@ P.iniciar y luego al procedimiento de cada evento, en orden.
 """
 from dataclasses import dataclass
 
-from ast_pixellang import Asignacion, Binaria, Logico, Numero, Unaria, Variable
+from ast_pixellang import Asignacion, Binaria, Logico, Numero, Unaria, Variable, texto_numero
 from semantico import tipo_aritmetico
 
 ARITMETICOS = ("+", "-", "*", "/")
@@ -104,7 +104,7 @@ class GeneradorTAC:
         return temp
 
     def generar_expr(self, nodo):
-        if isinstance(nodo, Numero): return str(nodo.valor)
+        if isinstance(nodo, Numero): return texto_numero(nodo.valor)
         if isinstance(nodo, Logico): return "verdadero" if nodo.valor else "falso"
         if isinstance(nodo, Variable): return nodo.nombre
         if isinstance(nodo, Unaria):

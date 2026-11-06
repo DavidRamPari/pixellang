@@ -9,6 +9,7 @@ Genera programas válidos al azar y, para cada uno, comprueba que:
 
 Uso: python pruebas/probar_generados.py [cantidad] [semilla]
 """
+import math
 import os
 import random
 import sys
@@ -27,10 +28,17 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 
+def igualable(valor):
+    """Un real puede llegar a NaN (por ejemplo, infinito menos infinito), y NaN no es
+    igual a sí mismo; para comparar se usa su nombre."""
+    return "nan" if isinstance(valor, float) and math.isnan(valor) else valor
+
+
 def comparable(resultado):
     """Las dos implementaciones redactan distinto el mensaje de error; se compara
     solo en qué paso ocurre."""
-    return [(p, [(ev, est, val if est is not None else "error") for ev, est, val in pasos])
+    return [(p, [(ev, est, [igualable(v) for v in val] if est is not None else "error")
+                 for ev, est, val in pasos])
             for p, pasos in resultado]
 
 

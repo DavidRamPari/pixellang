@@ -8,19 +8,29 @@ máquina.
 """
 from ast_pixellang import Asignacion, Logico, Numero, Unaria, Variable
 
+MINIMO, MAXIMO = -2 ** 31, 2 ** 31 - 1    # los enteros son de 32 bits
+
 
 class ErrorReferencia(Exception):
     pass
 
 
+def en_rango(valor):
+    if isinstance(valor, int) and not isinstance(valor, bool) and not MINIMO <= valor <= MAXIMO:
+        raise ErrorReferencia("desbordamiento de entero")
+    return valor
+
+
 def evaluar(nodo, memoria):
-    if isinstance(nodo, (Numero, Logico)):
+    if isinstance(nodo, Numero):
+        return en_rango(nodo.valor)
+    if isinstance(nodo, Logico):
         return nodo.valor
     if isinstance(nodo, Variable):
         return memoria[nodo.nombre]
     if isinstance(nodo, Unaria):
         valor = evaluar(nodo.operando, memoria)
-        return (not valor) if nodo.op == "!" else -valor
+        return (not valor) if nodo.op == "!" else en_rango(-valor)
     if nodo.op == "&&":   # cortocircuito: si la izquierda es falsa, no se evalúa la derecha
         return evaluar(nodo.izquierda, memoria) and evaluar(nodo.derecha, memoria)
     if nodo.op == "||":
@@ -28,14 +38,14 @@ def evaluar(nodo, memoria):
     a, b = evaluar(nodo.izquierda, memoria), evaluar(nodo.derecha, memoria)
     if isinstance(a, float) or isinstance(b, float):   # entero con real: promoción a real
         a, b = float(a), float(b)
-    if nodo.op == "+": return a + b
-    if nodo.op == "-": return a - b
-    if nodo.op == "*": return a * b
+    if nodo.op == "+": return en_rango(a + b)
+    if nodo.op == "-": return en_rango(a - b)
+    if nodo.op == "*": return en_rango(a * b)
     if nodo.op == "/":
         if b == 0:
             raise ErrorReferencia("división entre cero")
         if isinstance(a, int):
-            return -(-a // b) if (a < 0) != (b < 0) else a // b   # hacia cero
+            return en_rango(-(-a // b) if (a < 0) != (b < 0) else a // b)   # hacia cero
         return a / b
     return {"<": a < b, ">": a > b, "<=": a <= b, ">=": a >= b,
             "==": a == b, "!=": a != b}[nodo.op]
@@ -86,7 +96,7 @@ def simular_referencia(programa):
                         entrar(t.destino)
                         break
                 anotar(evento)
-        except (ErrorReferencia, OverflowError) as e:
+        except ErrorReferencia as e:
             pasos.append((evento, None, str(e)))
         resultado.append((sim.personaje, pasos))
     return resultado

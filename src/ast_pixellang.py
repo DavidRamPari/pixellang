@@ -10,6 +10,7 @@ El AST se construye después del análisis semántico, cuando el programa ya no
 tiene errores, por eso los nodos no guardan la línea ni la columna.
 """
 from dataclasses import dataclass
+from decimal import Decimal
 
 import frontend  # noqa: F401  agrega src/generado al path de Python
 from PixelLangVisitor import PixelLangVisitor
@@ -139,6 +140,15 @@ def construir_ast(arbol):
     return ConstructorAST().visit(arbol)
 
 
+def texto_numero(valor):
+    """El número como se escribe en PixelLang: un real siempre lleva punto decimal y
+    nunca exponente (str(0.00001) daría 1e-05)."""
+    if isinstance(valor, float):
+        texto = format(Decimal(repr(valor)), "f")
+        return texto if "." in texto else texto + ".0"
+    return str(valor)
+
+
 # Listado del AST con ├── y └──, como el de la opción --arbol ------------------
 
 def etiqueta(nodo):
@@ -153,7 +163,7 @@ def etiqueta(nodo):
     if isinstance(nodo, Bloque): return "Bloque"
     if isinstance(nodo, Asignacion): return f'Asignacion("{nodo.nombre}")'
     if isinstance(nodo, Seleccion): return "Seleccion"
-    if isinstance(nodo, Numero): return f"Numero({nodo.valor})"
+    if isinstance(nodo, Numero): return f"Numero({texto_numero(nodo.valor)})"
     if isinstance(nodo, Logico): return "Logico(verdadero)" if nodo.valor else "Logico(falso)"
     if isinstance(nodo, Variable): return f'Variable("{nodo.nombre}")'
     if isinstance(nodo, Unaria): return f'Unaria("{nodo.op}")'

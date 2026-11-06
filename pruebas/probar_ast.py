@@ -92,4 +92,6 @@ lineas = ast_indentado(programa)
 assert lineas[0] == "Programa" and lineas[1] == '├── Personaje("Caballero")'
 assert '│   ├── Atributo("vida", entero)' in lineas
 assert any(linea.endswith('Transicion("fin_aturdimiento" -> "Derrotado")') for linea in lineas)
+assert '│   │   └── Numero(0.0)' in lineas
+assert ast_indentado(Numero(0.00001)) == ["Numero(0.00001)"]
 print("Listado del AST: OK")

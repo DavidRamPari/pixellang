@@ -65,6 +65,11 @@ assert procedimiento(codigo, "P.iniciar")[2:7] == [
     "t1 = intToFloat(a)", "t2 = t1 + b", "t3 = intToFloat(2)", "t4 = t2 * t3", "r = t4"]
 _, codigo = compilar(personaje("x: real = 7;"))
 assert procedimiento(codigo, "P.iniciar")[:2] == ["t1 = intToFloat(7)", "x = t1"]
+# Un real se escribe siempre con punto y sin exponente, aunque sea muy chico o muy grande
+programa, codigo = compilar(personaje("x: real = 0.00001; y: real = 10000000000000000.0;")
+                            + " simular P: e;")
+assert procedimiento(codigo, "P.iniciar")[:2] == ["x = 0.00001", "y = 10000000000000000.0"]
+assert simular(programa, codigo)[1].split()[3:] == ["x=0.00001", "y=10000000000000000.0"]
 # Negación aritmética: un operando, no una resta
 _, codigo = compilar(personaje("a: entero = 1; r: entero = -(a + 3);"))
 assert procedimiento(codigo, "P.iniciar")[1:4] == ["t1 = a + 3", "t2 = -t1", "r = t2"]
@@ -146,4 +151,14 @@ programa, codigo = compilar(personaje(
 traza = simular(programa, codigo)
 assert traza[-1].split() == ["e", "error", "de", "ejecución:", "división", "entre", "cero",
                              "en", "P.al_entrar_T:", "t1", "=", "b", "/", "a"]
+# Los enteros son de 32 bits: el menor cabe, pero pasar del mayor es un error de ejecución
+programa, codigo = compilar(personaje("y: entero = -2147483647 - 1;") + " simular P: e;")
+assert simular(programa, codigo)[1].split()[3] == "y=-2147483648"
+programa, codigo = compilar(personaje(
+    "x: entero = 2147483647;",
+    "inicial estado S { cuando e -> T; } estado T { al_entrar { x = x + 1; } cuando e -> S; }")
+    + " simular P: e;")
+assert simular(programa, codigo)[-1].split() == [
+    "e", "error", "de", "ejecución:", "desbordamiento", "de", "entero",
+    "en", "P.al_entrar_T:", "t1", "=", "x", "+", "1"]
 print("Simulación: OK")

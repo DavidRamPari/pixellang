@@ -95,7 +95,7 @@ python src/main.py ejemplos/caballero.pxl --simular
 | `--tac` | el código de tres direcciones: un procedimiento para iniciar cada personaje, uno por estado y uno por evento, y uno por cada bloque `simular` |
 | `--cuadruplos` | el mismo código como cuádruplos (operador, argumento 1, argumento 2, resultado) |
 | `--triples` | el mismo código como triples: cada temporal se reemplaza por la posición del triple que lo calcula |
-| `--simular` | ejecuta los bloques `simular` sobre el código de tres direcciones y muestra el estado y los atributos después de cada evento |
+| `--simular` | ejecuta los bloques `simular` sobre el código de tres direcciones y muestra el estado y los atributos después de cada evento. Los enteros son de 32 bits: si un resultado entero se sale de ese rango, o si se divide entre cero, esa simulación se detiene con un error de ejecución |
 
 Las opciones se pueden combinar. Los errores semánticos indican el código, la línea y la columna (contada desde 0, como en ANTLR). Para `ejemplos/caballero.pxl`, `--tabla` empieza así:
 

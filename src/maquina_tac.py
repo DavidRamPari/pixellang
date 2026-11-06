@@ -3,13 +3,24 @@
 Sirve para validar el código intermedio antes de tener el back end con LLVM:
 cada bloque simular se ejecuta sobre el TAC y se muestra el estado del personaje
 y sus atributos después de cada evento. Cada personaje tiene su propia memoria,
-porque dos personajes pueden tener atributos con el mismo nombre.
+porque dos personajes pueden tener atributos con el mismo nombre. Los enteros son
+de 32 bits, como el tipo i32 de LLVM: un resultado fuera de ese rango es un error
+de ejecución, igual que una división entre cero.
 """
 from codigo_intermedio import formatear_tac
+
+MINIMO, MAXIMO = -2 ** 31, 2 ** 31 - 1    # rango de un entero de 32 bits
 
 
 class ErrorEjecucion(Exception):
     pass
+
+
+def entero_32(valor):
+    """Comprueba que un entero quepa en 32 bits; los reales y los lógicos pasan igual."""
+    if type(valor) is int and not MINIMO <= valor <= MAXIMO:
+        raise ErrorEjecucion("desbordamiento de entero")
+    return valor
 
 
 def dividir(a, b):
@@ -46,7 +57,7 @@ class MaquinaTAC:
         if arg in ("verdadero", "falso"):
             return arg == "verdadero"
         if arg[0].isdigit():
-            return float(arg) if "." in arg else int(arg)
+            return float(arg) if "." in arg else entero_32(int(arg))
         if arg in self.estados[personaje]:   # los nombres de estado son constantes
             return arg
         return self.memorias[personaje][arg]
@@ -60,36 +71,31 @@ class MaquinaTAC:
             k += 1
             if i.op == "return":
                 return
-            if i.op == "label":
-                continue
-            if i.op == "goto":
-                k = self.etiquetas[i.resultado]
-            elif i.op == "if":
-                if self.valor(i.arg1, personaje):
-                    k = self.etiquetas[i.resultado]
-            elif i.op == "ifFalse":
-                if not self.valor(i.arg1, personaje):
-                    k = self.etiquetas[i.resultado]
-            elif i.op == "call":
+            if i.op == "call":
                 self.ejecutar(i.arg1)
-            elif i.op == "copy":
-                memoria[i.resultado] = self.valor(i.arg1, personaje)
-            elif i.op == "minus":
-                memoria[i.resultado] = -self.valor(i.arg1, personaje)
-            elif i.op == "!":
-                memoria[i.resultado] = not self.valor(i.arg1, personaje)
-            elif i.op == "intToFloat":
-                try:
-                    memoria[i.resultado] = float(self.valor(i.arg1, personaje))
-                except OverflowError:
-                    raise ErrorEjecucion(f"el entero es demasiado grande para convertirlo a real "
-                                         f"en {procedimiento}: {formatear_tac(i)}")
-            else:
-                a, b = self.valor(i.arg1, personaje), self.valor(i.arg2, personaje)
-                try:
-                    memoria[i.resultado] = OPERACIONES[i.op](a, b)
-                except ErrorEjecucion as e:
-                    raise ErrorEjecucion(f"{e} en {procedimiento}: {formatear_tac(i)}")
+                continue
+            try:
+                if i.op == "goto":
+                    k = self.etiquetas[i.resultado]
+                elif i.op == "if":
+                    if self.valor(i.arg1, personaje):
+                        k = self.etiquetas[i.resultado]
+                elif i.op == "ifFalse":
+                    if not self.valor(i.arg1, personaje):
+                        k = self.etiquetas[i.resultado]
+                elif i.op != "label":
+                    memoria[i.resultado] = entero_32(self.calcular(i, personaje))
+            except ErrorEjecucion as e:
+                raise ErrorEjecucion(f"{e} en {procedimiento}: {formatear_tac(i)}")
+
+    def calcular(self, i, personaje):
+        """El valor que una instrucción guarda en su resultado."""
+        a = self.valor(i.arg1, personaje)
+        if i.op == "copy": return a
+        if i.op == "minus": return -a
+        if i.op == "!": return not a
+        if i.op == "intToFloat": return float(a)
+        return OPERACIONES[i.op](a, self.valor(i.arg2, personaje))
 
 
 def mostrar(valor):
