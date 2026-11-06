@@ -1,8 +1,8 @@
 # PixelLang
 
-Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa y verifica que ese autómata esté bien formado.
+Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa, verifica que ese autómata esté bien formado y genera su código intermedio (código de tres direcciones), sobre el que se ejecutan los bloques `simular`.
 
-Trabajo Parcial de Teoría de Compiladores, Universidad Peruana de Ciencias Aplicadas, 2026.
+Trabajo Parcial y Final de Teoría de Compiladores, Universidad Peruana de Ciencias Aplicadas, 2026.
 
 ## Integrantes
 
@@ -13,7 +13,13 @@ Trabajo Parcial de Teoría de Compiladores, Universidad Peruana de Ciencias Apli
 | U20241D937 | Quito Anccasi, Antony Rodrigo |
 | U202412516 | Monge Jiménez, Mateo Alonso |
 
-## Entrega del trabajo parcial
+## Entrega del segundo avance (hito 2)
+
+| Entregable | Enlace |
+|---|---|
+| Informe | [docs/PixelLang_Hito2.pdf](docs/PixelLang_Hito2.pdf) |
+
+## Entrega del trabajo parcial (hito 1)
 
 | Entregable | Enlace |
 |---|---|
@@ -35,7 +41,17 @@ personaje Puerta {
 simular Puerta: ser_abierta;
 ```
 
-El ejemplo completo, un caballero con atributos, guardas y acciones, está en [ejemplos/caballero.pxl](ejemplos/caballero.pxl).
+El ejemplo completo, un caballero con atributos, guardas y acciones, está en [ejemplos/caballero.pxl](ejemplos/caballero.pxl). Con `--simular`, el compilador ejecuta su bloque `simular` sobre el código de tres direcciones:
+
+```
+simular Caballero
+  inicio            -> Reposo       vida=100 daño_golpe=25 velocidad=0.0 y=0.0
+  saltar            -> Saltando     vida=100 daño_golpe=25 velocidad=0.0 y=2.5
+  aterrizar         -> Reposo       vida=100 daño_golpe=25 velocidad=0.0 y=0.0
+  atacar            -> Atacando     vida=100 daño_golpe=25 velocidad=1.5 y=0.0
+  ...
+  fin_aturdimiento  -> Derrotado    vida=0 daño_golpe=25 velocidad=0.0 y=0.0
+```
 
 ## Cómo ejecutarlo
 
@@ -47,6 +63,7 @@ py -m venv .venv
 pip install -r requirements.txt
 java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o src/generado -Xexact-output-dir gramatica/PixelLang.g4
 python src/main.py ejemplos/caballero.pxl --tokens --arbol --tabla
+python src/main.py ejemplos/caballero.pxl --ast --tac --simular
 python pruebas/correr_pruebas.py
 ```
 
@@ -56,6 +73,11 @@ python pruebas/correr_pruebas.py
 | `--tokens` | la lista de tokens |
 | `--arbol` | el árbol sintáctico |
 | `--tabla` | la tabla de símbolos de cada ámbito |
+| `--ast` | el árbol de sintaxis abstracta |
+| `--tac` | el código de tres direcciones |
+| `--cuadruplos` | el código de tres direcciones como cuádruplos |
+| `--triples` | el código de tres direcciones como triples |
+| `--simular` | la ejecución de los bloques `simular` sobre el código de tres direcciones |
 
 ## Estructura
 
@@ -65,10 +87,13 @@ python pruebas/correr_pruebas.py
 | `src/main.py` | Driver |
 | `src/frontend.py` | Lexer y parser con recolección de errores |
 | `src/semantico.py` | Visitor semántico: tabla de símbolos y errores E01 a E10 |
+| `src/ast_pixellang.py` | Nodos del AST y visitor que lo construye |
+| `src/codigo_intermedio.py` | Generador de código de tres direcciones, cuádruplos y triples |
+| `src/maquina_tac.py` | Máquina que ejecuta el código de tres direcciones (opción `--simular`) |
 | `ejemplos/` | Programas de ejemplo |
-| `pruebas/` | Pruebas léxicas, sintácticas y semánticas |
+| `pruebas/` | Pruebas léxicas, sintácticas, semánticas, del AST, del código intermedio y diferenciales |
 | `.vscode/` | Tarea para generar el parser y configuraciones de ejecución |
-| `docs/` | Informe y presentación del trabajo parcial |
+| `docs/` | Informes de los hitos 1 y 2 y presentación del trabajo parcial |
 
 ## Avance
 
@@ -77,5 +102,5 @@ Las tareas de cada hito están en los [issues](https://github.com/DavidRamPari/p
 | Hito | Contenido | Estado |
 |---|---|---|
 | 1 | Léxico, gramáticas y derivaciones, lexer y parser en ANTLR4, análisis semántico | Terminado |
-| 2 | Errores semánticos, arquitectura del compilador y plan de validación | Pendiente |
-| 3 | Generación de código con LLVM | Pendiente |
+| 2 | Gramática actualizada, analizador semántico completo, AST, código de tres direcciones, simulación sobre el TAC, arquitectura del compilador y plan de validación | Terminado |
+| 3 | Generación de código con LLVM, resultados de la validación y conexión con Unity | Pendiente |

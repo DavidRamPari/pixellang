@@ -2,7 +2,7 @@
 
 Esta guía está pensada para Windows 10 u 11. Al final hay una sección con los cambios para WSL, Linux o macOS.
 
-En este hito, compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`, que hace el análisis léxico, sintáctico y semántico de un programa `.pxl`. La generación de código con LLVM corresponde al hito 3.
+Compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`. El driver hace el análisis léxico, sintáctico y semántico de un programa `.pxl`, construye su árbol de sintaxis abstracta (AST) y genera el código de tres direcciones, sobre el que se ejecutan los bloques `simular`. La generación de código con LLVM corresponde al hito 3.
 
 ## 1. Programas necesarios
 
@@ -68,7 +68,7 @@ Luego, en VS Code, presiona Ctrl+Shift+P, escribe **Python: Select Interpreter**
 java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o src/generado -Xexact-output-dir gramatica/PixelLang.g4
 ```
 
-El comando crea la carpeta `src/generado` con `PixelLangLexer.py`, `PixelLangParser.py` y `PixelLangVisitor.py`. Esos archivos no se editan a mano: cada vez que se modifique `PixelLang.g4` hay que volver a ejecutar el comando.
+El comando crea la carpeta `src/generado` con `PixelLangLexer.py`, `PixelLangParser.py` y `PixelLangVisitor.py`. Esos archivos no se editan a mano: cada vez que se modifique `PixelLang.g4` hay que volver a ejecutar el comando. En el hito 2 la gramática cambió (sus alternativas tienen etiquetas), así que después de actualizar el repositorio también hay que volver a generar el parser.
 
 Desde VS Code también se puede hacer con **Ctrl+Shift+B**, que ejecuta la tarea **Generar parser (ANTLR)** definida en `.vscode/tasks.json`.
 
@@ -79,6 +79,10 @@ python src/main.py ejemplos/caballero.pxl
 python src/main.py ejemplos/caballero.pxl --tokens
 python src/main.py ejemplos/caballero.pxl --arbol
 python src/main.py ejemplos/caballero.pxl --tabla
+python src/main.py ejemplos/caballero.pxl --ast
+python src/main.py ejemplos/caballero.pxl --tac
+python src/main.py ejemplos/caballero.pxl --cuadruplos --triples
+python src/main.py ejemplos/caballero.pxl --simular
 ```
 
 | Opción | Qué muestra |
@@ -87,6 +91,11 @@ python src/main.py ejemplos/caballero.pxl --tabla
 | `--tokens` | la lista de tokens: línea, nombre del token y lexema |
 | `--arbol` | el árbol sintáctico, un nodo por línea |
 | `--tabla` | la tabla de símbolos: el ámbito global con los personajes y el ámbito de cada personaje con sus atributos, eventos y estados |
+| `--ast` | el árbol de sintaxis abstracta, un nodo por línea |
+| `--tac` | el código de tres direcciones: un procedimiento para iniciar cada personaje, uno por estado y uno por evento, y uno por cada bloque `simular` |
+| `--cuadruplos` | el mismo código como cuádruplos (operador, argumento 1, argumento 2, resultado) |
+| `--triples` | el mismo código como triples: cada temporal se reemplaza por la posición del triple que lo calcula |
+| `--simular` | ejecuta los bloques `simular` sobre el código de tres direcciones y muestra el estado y los atributos después de cada evento |
 
 Las opciones se pueden combinar. Los errores semánticos indican el código, la línea y la columna (contada desde 0, como en ANTLR). Para `ejemplos/caballero.pxl`, `--tabla` empieza así:
 
@@ -101,7 +110,24 @@ vida               atributo   entero              2
 daño_golpe         atributo   entero              3
 ```
 
-Si el programa no tiene errores, la salida termina con `Sin errores léxicos, sintácticos ni semánticos.`
+Con `--tac`, el estado `Atacando` del caballero se traduce así. La condición del `si` se convierte en saltos:
+
+```
+Caballero.al_entrar_Atacando:
+    estado = Atacando
+    t2 = vida < 50
+    if t2 goto L1
+    goto L2
+L1:
+    velocidad = 1.0
+    goto L3
+L2:
+    velocidad = 1.5
+L3:
+    return
+```
+
+Si el programa no tiene errores, la salida termina con `Sin errores léxicos, sintácticos ni semánticos.` El AST, el código de tres direcciones y la simulación solo se muestran cuando no hay errores.
 
 Para probar un programa propio, crea un archivo `.pxl` y pásalo como argumento.
 
@@ -112,19 +138,27 @@ El archivo `.vscode/launch.json` tiene dos configuraciones, que aparecen en la p
 - **PixelLang: analizar el archivo abierto**: abre cualquier archivo `.pxl`, elige esta configuración y presiona F5. Primero se regenera el parser y luego se ejecuta `main.py` con `--tokens --arbol --tabla` sobre ese archivo.
 - **PixelLang: correr todas las pruebas**: ejecuta `pruebas/correr_pruebas.py`.
 
-Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` para ver cómo el visitor llena la tabla de símbolos.
+Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` para ver cómo el visitor llena la tabla de símbolos, o en `src/codigo_intermedio.py` para seguir la generación del código. Para ver el código intermedio o la simulación con F5, se agregan `--tac` o `--simular` a la lista `args` de la primera configuración.
 
 ## 9. Pruebas
 
 ```
 python pruebas/probar_construcciones.py
 python pruebas/correr_pruebas.py
+python pruebas/probar_ast.py
+python pruebas/probar_tac.py
+python pruebas/probar_generados.py
 ```
 
 | Comando | Resultado esperado |
 |---|---|
 | `probar_construcciones.py` | los 35 ejemplos de las construcciones en `ok` y `fallos: 0` |
 | `correr_pruebas.py` | la salida del compilador para cada prueba léxica, sintáctica y semántica |
+| `probar_ast.py` | `OK` en las pruebas de precedencia, asociatividad y estructura del AST |
+| `probar_tac.py` | `OK` en las pruebas del código de tres direcciones, los cuádruplos, los triples y la simulación |
+| `probar_generados.py` | `fallos: 0`: en 500 programas generados al azar, la simulación sobre el TAC da la misma traza que el intérprete de referencia, que recorre el AST |
+
+`probar_generados.py` acepta la cantidad de programas y una semilla, por ejemplo `python pruebas/probar_generados.py 3000 7`.
 
 ## 10. Problemas comunes
 
@@ -135,6 +169,7 @@ python pruebas/correr_pruebas.py
 | `No module named 'antlr4'` | El entorno virtual no está activo o faltan dependencias. Actívalo y ejecuta `pip install -r requirements.txt`. |
 | `No module named 'PixelLangLexer'` | Falta generar el parser. Ejecuta el paso 6. |
 | `Could not deserialize ATN` | El `.jar` y el runtime de Python son de versiones distintas. Usa la 4.13.2 en ambos. |
+| Errores semánticos que hablan de `None`, como `no se puede asignar un valor None` | El parser de `src/generado` es de una versión anterior de la gramática. Vuelve a generarlo con el paso 6. |
 | `No such file or directory: 'ejemplos/caballero.pxl'` | La terminal no está en la carpeta `pixellang`. Muévete con `cd` a esa carpeta. |
 | Las tildes o la ñ se ven mal | Ejecuta `$env:PYTHONUTF8=1` en la terminal y vuelve a correr el comando. |
 
