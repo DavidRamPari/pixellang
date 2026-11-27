@@ -353,30 +353,42 @@ class AnalizadorSemantico(PixelLangVisitor):
             return "error"
         return tipo_aritmetico(tipos)
 
-    def visitUnario(self, ctx):
-        if ctx.factor():
-            return self.visit(ctx.factor())
+    def visitNegacion(self, ctx):
         t = self.visit(ctx.unario())
-        op = ctx.getChild(0).getText()
         if t == "error":
             return t
-        if op == "!" and t != "logico":
+        if t != "logico":
             self.error(posicion(ctx), "E08", f"'!' necesita un valor logico, no {t}")
             return "error"
-        if op == "-" and t not in NUMERICOS:
+        return t
+
+    def visitNegativo(self, ctx):
+        t = self.visit(ctx.unario())
+        if t == "error":
+            return t
+        if t not in NUMERICOS:
             self.error(posicion(ctx), "E08", f"'-' necesita un número, no {t}")
             return "error"
         return t
 
-    def visitFactor(self, ctx):
-        if ctx.expr():
-            return self.visit(ctx.expr())
-        if ctx.NUM_ENTERO():
-            return "entero"
-        if ctx.NUM_REAL():
-            return "real"
-        if ctx.VERDADERO() or ctx.FALSO():
-            return "logico"
+    def visitPrimario(self, ctx):
+        return self.visit(ctx.factor())
+
+    # Cada alternativa etiquetada de factor tiene su propio método, como en el laboratorio 6
+
+    def visitParentesis(self, ctx):
+        return self.visit(ctx.expr())
+
+    def visitNumEntero(self, ctx):
+        return "entero"
+
+    def visitNumReal(self, ctx):
+        return "real"
+
+    def visitValorLogico(self, ctx):
+        return "logico"
+
+    def visitVariable(self, ctx):
         nombre = ctx.ID().getText()
         simbolo = self.tabla.buscar(nombre, "atributo")
         if simbolo is None:

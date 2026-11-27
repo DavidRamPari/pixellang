@@ -29,13 +29,15 @@ rel         : arit (opRel arit)? ;
 opRel       : MENOR | MAYOR | MENOR_IGUAL | MAYOR_IGUAL | IGUAL | DISTINTO ;
 arit        : term ((MAS | MENOS) term)* ;
 term        : unario ((POR | ENTRE) unario)* ;
-unario      : (NO_LOGICO | MENOS) unario | factor ;
-factor      : PAR_A expr PAR_C
-            | NUM_ENTERO
-            | NUM_REAL
-            | VERDADERO
-            | FALSO
-            | ID
+unario      : NO_LOGICO unario                          # negacion
+            | MENOS unario                              # negativo
+            | factor                                    # primario
+            ;
+factor      : PAR_A expr PAR_C                          # parentesis
+            | NUM_ENTERO                                # numEntero
+            | NUM_REAL                                  # numReal
+            | (VERDADERO | FALSO)                       # valorLogico
+            | ID                                        # variable
             ;
 
 PERSONAJE   : 'personaje' ;
