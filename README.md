@@ -19,6 +19,7 @@ Trabajo Parcial y Final de Teoría de Compiladores, Universidad Peruana de Cienc
 |---|---|
 | Informe | [docs/PixelLang_TrabajoFinal.pdf](docs/PixelLang_TrabajoFinal.pdf) |
 | Presentación | [docs/PixelLang_TrabajoFinal_Presentacion.pdf](docs/PixelLang_TrabajoFinal_Presentacion.pdf) |
+| Video de demostración | [docs/PixelLang_TrabajoFinal_Demo.mp4](docs/PixelLang_TrabajoFinal_Demo.mp4) |
 | Escena de Unity | carpeta [unity](unity) |
 | Evidencias de las pruebas | carpeta [evidencias](evidencias) |
 
