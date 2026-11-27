@@ -1,31 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="3" result="Passed" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:08Z" duration="0.5960669">
-  <test-suite type="TestSuite" id="1009" name="PixelLang Demo" fullname="PixelLang Demo" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:08Z" duration="0.596067" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="6" result="Passed" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:45Z" duration="4.4616591">
+  <test-suite type="TestSuite" id="1012" name="PixelLang Demo" fullname="PixelLang Demo" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:45Z" duration="4.461659" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="PlayMode" />
     </properties>
-    <test-suite type="Assembly" id="1005" name="PixelLang.Unity.Tests.dll" fullname="C:/Users/david/Unity/Proyectos/PixelLangUnity/Library/ScriptAssemblies/PixelLang.Unity.Tests.dll" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:08Z" duration="0.581172" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1008" name="PixelLang.Unity.Tests.dll" fullname="C:/Users/david/Unity/Proyectos/PixelLangUnity/Library/ScriptAssemblies/PixelLang.Unity.Tests.dll" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:45Z" duration="4.456167" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="36244" />
+        <property name="_PID" value="31316" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="PlayMode" />
         <property name="EditorOnly" value="False" />
       </properties>
-      <test-suite type="TestFixture" id="1001" name="PruebasPixelLang" fullname="PruebasPixelLang" classname="PruebasPixelLang" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:08Z" duration="0.577211" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestFixture" id="1001" name="PruebasPixelLang" fullname="PruebasPixelLang" classname="PruebasPixelLang" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:45Z" duration="4.454710" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-case id="1002" name="LaBibliotecaDaLaMismaTrazaQueElTAC" fullname="PruebasPixelLang.LaBibliotecaDaLaMismaTrazaQueElTAC" methodname="LaBibliotecaDaLaMismaTrazaQueElTAC" classname="PruebasPixelLang" runstate="Runnable" seed="1213503509" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:07Z" duration="0.032009" asserts="0">
+        <test-case id="1004" name="AturdidoElCaballeroIgnoraAtacar" fullname="PruebasPixelLang.AturdidoElCaballeroIgnoraAtacar" methodname="AturdidoElCaballeroIgnoraAtacar" classname="PruebasPixelLang" runstate="Runnable" seed="1169109712" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:40Z" duration="0.017336" asserts="0">
           <properties>
             <property name="retryIteration" value="0" />
             <property name="repeatIteration" value="0" />
           </properties>
         </test-case>
-        <test-case id="1003" name="LaBibliotecaRechazaIndicesInvalidos" fullname="PruebasPixelLang.LaBibliotecaRechazaIndicesInvalidos" methodname="LaBibliotecaRechazaIndicesInvalidos" classname="PruebasPixelLang" runstate="Runnable" seed="1727018363" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:07Z" duration="0.010447" asserts="0">
+        <test-case id="1002" name="LaBibliotecaDaLaMismaTrazaQueElTAC" fullname="PruebasPixelLang.LaBibliotecaDaLaMismaTrazaQueElTAC" methodname="LaBibliotecaDaLaMismaTrazaQueElTAC" classname="PruebasPixelLang" runstate="Runnable" seed="204736133" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:40Z" duration="0.000854" asserts="0">
           <properties>
             <property name="retryIteration" value="0" />
             <property name="repeatIteration" value="0" />
           </properties>
         </test-case>
-        <test-case id="1004" name="LaEscenaMuestraLosMismosEstados" fullname="PruebasPixelLang.LaEscenaMuestraLosMismosEstados" methodname="LaEscenaMuestraLosMismosEstados" classname="PruebasPixelLang" runstate="Runnable" seed="841957009" result="Passed" start-time="2026-11-27 03:46:07Z" end-time="2026-11-27 03:46:08Z" duration="0.502750" asserts="0">
+        <test-case id="1003" name="LaBibliotecaRechazaIndicesInvalidos" fullname="PruebasPixelLang.LaBibliotecaRechazaIndicesInvalidos" methodname="LaBibliotecaRechazaIndicesInvalidos" classname="PruebasPixelLang" runstate="Runnable" seed="1747092310" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:40Z" duration="0.000177" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1006" name="LaEscenaMuestraLosMismosEstados" fullname="PruebasPixelLang.LaEscenaMuestraLosMismosEstados" methodname="LaEscenaMuestraLosMismosEstados" classname="PruebasPixelLang" runstate="Runnable" seed="660020925" result="Passed" start-time="2026-11-27 05:21:40Z" end-time="2026-11-27 05:21:41Z" duration="0.228984" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1005" name="LaGuardaLlevaAlSlimeASuEstadoFinal" fullname="PruebasPixelLang.LaGuardaLlevaAlSlimeASuEstadoFinal" methodname="LaGuardaLlevaAlSlimeASuEstadoFinal" classname="PruebasPixelLang" runstate="Runnable" seed="1152448629" result="Passed" start-time="2026-11-27 05:21:41Z" end-time="2026-11-27 05:21:41Z" duration="0.000474" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1007" name="LaPartidaDeDemostracionTerminaConElSlimeAplastado" fullname="PruebasPixelLang.LaPartidaDeDemostracionTerminaConElSlimeAplastado" methodname="LaPartidaDeDemostracionTerminaConElSlimeAplastado" classname="PruebasPixelLang" runstate="Runnable" seed="2141322646" result="Passed" start-time="2026-11-27 05:21:41Z" end-time="2026-11-27 05:21:45Z" duration="4.194816" asserts="0">
           <properties>
             <property name="_JOINTYPE" value="UnityCombinatorial" />
             <property name="retryIteration" value="0" />

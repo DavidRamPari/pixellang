@@ -1,3 +1,4 @@
 Expresiones: OK
 Programa completo: OK
 Listado del AST: OK
+Texto de las expresiones: OK

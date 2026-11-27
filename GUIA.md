@@ -174,16 +174,30 @@ Los índices siguen el orden de declaración del programa y están en el `.json`
 
 ## 10. Escena de Unity
 
-La carpeta `unity` es un proyecto de Unity 6.3 (plantilla Universal 2D) con la DLL del caballero en `Assets/Plugins/x86_64` y su mapa en `Assets/Resources/pixellang.json`. Para abrirlo, en Unity Hub se elige **Add > Add project from disk** y la carpeta `unity`, y luego se abre la escena `Assets/Scenes/DemoPixelLang.unity` y se presiona Play.
+La carpeta `unity` es un proyecto de Unity 6.3 (plantilla Universal 2D). Para abrirlo, en Unity Hub se elige **Add > Add project from disk** y la carpeta `unity`; luego se abre la escena `Assets/Scenes/JuegoPixelLang.unity` y se presiona Play. La DLL está en `Assets/Plugins/x86_64` y su mapa, en `Assets/Resources/pixellang.json`; las dos salen de `ejemplos/juego.pxl`, que tiene dos personajes: el caballero (índice 0) y el slime (índice 1).
 
-La escena dibuja al caballero, muestra su estado y sus atributos y tiene un botón por evento. El botón **Ejecutar la simulación** repite el bloque `simular` del programa y compara cada paso con la traza de la máquina de TAC: el script de C# no tiene reglas propias, solo llama a la DLL.
+La escena `JuegoPixelLang` es un minijuego: el caballero se controla con el teclado y un slime lo persigue. El script de C# es el cuerpo de los personajes y la DLL es su cerebro. El script convierte lo que pasa en el juego en eventos y los envía con `pl_evento`; la DLL decide el estado y los atributos, y el script solo los dibuja.
 
-Si se cambia el programa, se genera de nuevo la DLL y se copia al proyecto:
+| Lo que pasa en el juego | Evento | Personaje |
+|---|---|---|
+| Espacio (o W) | `saltar` | caballero |
+| J (o K) | `atacar` | caballero |
+| termina la animación del salto, del ataque o del aturdimiento | `aterrizar`, `fin_ataque`, `fin_aturdimiento` | caballero |
+| el slime lo toca | `recibir_golpe` | caballero |
+| la espada lo alcanza o el caballero le cae encima | `recibir_golpe` | slime |
+| el caballero entra a su campo de visión o sale de él | `ver_jugador`, `perder_jugador` | slime |
+| termina su aturdimiento | `fin_aturdimiento` | slime |
+
+Si un evento no tiene transición en el estado actual, la DLL lo ignora: por ejemplo, `atacar` mientras el caballero está Aturdido. Abajo, la escena muestra la función de transición δ de cada personaje y resalta la transición que se acaba de tomar; un evento ignorado aparece en naranja. La partida termina cuando un personaje llega a su estado final (Derrotado o Aplastado); R reinicia y Tab abre la escena de validación.
+
+La escena `DemoPixelLang` es la validación: el botón **Ejecutar la simulación** repite el bloque `simular` del caballero y compara cada paso con la traza de la máquina de TAC guardada en el mapa.
+
+Si se cambia el programa, se genera de nuevo la DLL y se copia al proyecto (con Unity cerrado, porque Unity no suelta una DLL nativa cargada):
 
 ```
-python src/main.py ejemplos/caballero.pxl --emitir build/pixellang --biblioteca
-copy build\pixellang.dll unity\Assets\Plugins\x86_64\
-copy build\pixellang.json unity\Assets\Resources\
+python src/main.py ejemplos/juego.pxl --emitir build/unity/pixellang --biblioteca
+copy build\unity\pixellang.dll unity\Assets\Plugins\x86_64\
+copy build\unity\pixellang.json unity\Assets\Resources\
 ```
 
 Con Unity cerrado, también se puede usar la herramienta de línea de comandos de Unity (`winget install Unity.CLI`):
@@ -193,7 +207,7 @@ unity test unity --mode PlayMode
 unity run unity -- -executeMethod EscenaPixelLang.ConstruirWindows
 ```
 
-El primer comando ejecuta las pruebas de Unity (nivel 9 del plan de validación) y el segundo construye el reproductor de Windows en `unity/Build`. El menú **PixelLang** del editor tiene las mismas dos acciones: crear la escena y construir para Windows.
+El primer comando ejecuta las seis pruebas de Unity (nivel 9 del plan de validación) y el segundo construye el reproductor de Windows en `unity/Build`; el reproductor empieza en el minijuego. El menú **PixelLang** del editor tiene las mismas dos acciones: crear las escenas y construir para Windows.
 
 ## 11. Pruebas
 
@@ -218,10 +232,10 @@ dotnet run --project pruebas/nativo
 |---|---|
 | `probar_construcciones.py` | los 35 ejemplos de las construcciones en `ok` y `fallos: 0` |
 | `correr_pruebas.py` | la salida del compilador para cada prueba léxica, sintáctica y semántica |
-| `probar_ast.py` | `OK` en las pruebas de precedencia, asociatividad y estructura del AST |
+| `probar_ast.py` | `OK` en las pruebas de precedencia, asociatividad y estructura del AST, y en el texto de las expresiones que se guarda en el mapa |
 | `probar_tac.py` | `OK` en las pruebas del código de tres direcciones, los cuádruplos, los triples y la simulación |
 | `probar_llvm.py` | `OK` en las pruebas del código LLVM: bloques de si/sino y de la función de transición, cortocircuito con `phi`, casos límite de los enteros de 32 bits y de la división, ejemplos y grafo de flujo de control |
-| `probar_biblioteca.py` | enlaza la DLL del caballero, la carga con `ctypes` y termina con `fallos: 0` si su traza es igual a la de la máquina de TAC |
+| `probar_biblioteca.py` | enlaza la DLL del caballero y la del minijuego (`ejemplos/juego.pxl`, dos personajes), las carga con `ctypes` y termina con `fallos: 0` si sus trazas son iguales a las de la máquina de TAC |
 | `probar_generados.py` | `fallos: 0`: en los programas generados al azar, el intérprete de referencia (que recorre el AST), la máquina de TAC y el código LLVM con JIT dan la misma traza |
 | `dotnet run --project pruebas/nativo` | la DLL usada desde C# con las mismas declaraciones `DllImport` del proyecto de Unity: `fallos: 0` (requiere haber generado `build/pixellang.dll`) |
 

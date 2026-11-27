@@ -13,13 +13,13 @@ File Type: DLL
 
     ordinal hint RVA      name
 
-          1    0 00001330 pl_entero
-          2    1 00001310 pl_error
-          3    2 000012F0 pl_estado
-          4    3 00001280 pl_evento
-          5    4 00001250 pl_iniciar
-          6    5 00001380 pl_logico
-          7    6 00001350 pl_real
+          1    0 00001500 pl_entero
+          2    1 000014E0 pl_error
+          3    2 000014C0 pl_estado
+          4    3 00001400 pl_evento
+          5    4 000013C0 pl_iniciar
+          6    5 00001570 pl_logico
+          7    6 00001540 pl_real
 
   Summary
 
