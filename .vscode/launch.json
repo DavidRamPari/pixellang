@@ -6,7 +6,26 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/main.py",
-      "args": ["${file}", "--tokens", "--arbol", "--tabla"],
+      "args": [
+        "${file}",
+        "--tokens",
+        "--arbol",
+        "--tabla"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Generar parser (ANTLR)"
+    },
+    {
+      "name": "PixelLang: código LLVM y ejecución con JIT del archivo abierto",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/main.py",
+      "args": [
+        "${file}",
+        "--llvm",
+        "--jit"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "preLaunchTask": "Generar parser (ANTLR)"
@@ -16,6 +35,19 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/pruebas/correr_pruebas.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Generar parser (ANTLR)"
+    },
+    {
+      "name": "PixelLang: validar todo (niveles 1 a 8)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/pruebas/validar_todo.py",
+      "args": [
+        "3000",
+        "7"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "preLaunchTask": "Generar parser (ANTLR)"
