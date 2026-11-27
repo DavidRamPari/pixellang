@@ -11,5 +11,6 @@ Paso  9  atacar            Atacando   vida=25 daño_golpe=25 velocidad=1 y=0  co
 Paso 10  fin_ataque        Reposo     vida=25 daño_golpe=25 velocidad=0 y=0  coincide
 Paso 11  recibir_golpe     Aturdido   vida=0 daño_golpe=25 velocidad=0 y=0  coincide
 Paso 12  fin_aturdimiento  Derrotado  vida=0 daño_golpe=25 velocidad=0 y=0  coincide
-Índices inválidos: rechazados con el código 3
+Índices inválidos: rechazados con el código 3 (hay 64 instancias)
+Instancias: la instancia 1 no cambia a la instancia 0
 C# con DllImport: 13 pasos comparados con la máquina de TAC, fallos: 0

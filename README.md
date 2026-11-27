@@ -1,6 +1,6 @@
 # PixelLang
 
-Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa, verifica que ese autómata esté bien formado, genera su código intermedio (código de tres direcciones) y lo traduce a LLVM IR, que se ejecuta con JIT o se enlaza como una biblioteca nativa. Un minijuego de Unity usa esa biblioteca: el caballero y un slime son personajes de PixelLang, el juego les envía los eventos y el código generado decide sus estados.
+Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa, verifica que ese autómata esté bien formado, genera su código intermedio (código de tres direcciones) y lo traduce a LLVM IR, que se ejecuta con JIT o se enlaza como una biblioteca nativa. Un minijuego de Unity usa esa biblioteca: el caballero y dos slimes son personajes de PixelLang (los slimes, dos instancias del mismo personaje, cada una con su estado y su vida), el juego les envía los eventos y el código generado decide sus estados.
 
 Trabajo Parcial y Final de Teoría de Compiladores, Universidad Peruana de Ciencias Aplicadas, 2026.
 
@@ -108,7 +108,7 @@ python pruebas/validar_todo.py 3000 7
 | `src/maquina_tac.py` | Máquina que ejecuta el código de tres direcciones (opción `--simular`) |
 | `src/codigo_llvm.py` | Generador de LLVM IR con llvmlite, interfaz C, JIT y emisión del código objeto |
 | `src/biblioteca_nativa.py` | Enlace del código objeto como DLL (Windows) o `.so` (Linux) |
-| `unity/` | Proyecto de Unity 6.3: el minijuego del caballero contra el slime, la escena de validación, la DLL de `ejemplos/juego.pxl` y sus pruebas |
+| `unity/` | Proyecto de Unity 6.3: el minijuego del caballero contra dos slimes, la escena de validación, la DLL de `ejemplos/juego.pxl` y sus pruebas |
 | `evidencias/` | Salida de la última ejecución de todas las pruebas |
 | `ejemplos/` | Programas de ejemplo |
 | `pruebas/` | Pruebas léxicas, sintácticas, semánticas, del AST, del código intermedio, del código LLVM, de la biblioteca nativa (también desde C#) y diferenciales |

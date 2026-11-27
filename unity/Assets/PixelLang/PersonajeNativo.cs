@@ -4,32 +4,39 @@ using System.Globalization;
 // Un personaje de PixelLang ejecutado por la biblioteca nativa. Traduce los nombres del
 // programa a los índices de la interfaz C y compara el resultado con la traza del TAC.
 // No contiene reglas del personaje: las transiciones y las acciones están en la biblioteca.
+// Cada objeto usa una instancia del personaje, que tiene su propia ficha en la biblioteca
+// (su estado y sus atributos): dos slimes del mismo programa no comparten la vida.
 public class PersonajeNativo
 {
     public readonly PersonajePixelLang datos;
+    public readonly int instancia;      // número de la instancia en la interfaz C
 
-    public PersonajeNativo(PersonajePixelLang datos)
+    // La primera instancia del personaje: su número es el índice del personaje
+    public PersonajeNativo(PersonajePixelLang datos) : this(datos, datos.indice) { }
+
+    public PersonajeNativo(PersonajePixelLang datos, int instancia)
     {
         this.datos = datos;
+        this.instancia = instancia;
     }
 
     public int Error { get; private set; }
 
     public int Iniciar()
     {
-        return Error = PixelLangNative.pl_iniciar(datos.indice);
+        return Error = PixelLangNative.pl_iniciar(instancia);
     }
 
     public int Enviar(string evento)
     {
-        return Error = PixelLangNative.pl_evento(datos.indice, Array.IndexOf(datos.eventos, evento));
+        return Error = PixelLangNative.pl_evento(instancia, Array.IndexOf(datos.eventos, evento));
     }
 
     public string Estado
     {
         get
         {
-            int j = PixelLangNative.pl_estado(datos.indice);
+            int j = PixelLangNative.pl_estado(instancia);
             return j >= 0 && j < datos.estados.Length ? datos.estados[j] : "";
         }
     }
@@ -48,9 +55,9 @@ public class PersonajeNativo
     {
         switch (datos.atributos[a].tipo)
         {
-            case "entero": return PixelLangNative.pl_entero(datos.indice, a);
-            case "real": return PixelLangNative.pl_real(datos.indice, a);
-            default: return PixelLangNative.pl_logico(datos.indice, a);
+            case "entero": return PixelLangNative.pl_entero(instancia, a);
+            case "real": return PixelLangNative.pl_real(instancia, a);
+            default: return PixelLangNative.pl_logico(instancia, a);
         }
     }
 

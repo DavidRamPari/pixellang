@@ -16,7 +16,7 @@ from ast_pixellang import construir_ast                             # noqa: E402
 from codigo_intermedio import GeneradorTAC, verificar_tac           # noqa: E402
 from maquina_tac import trazas                                      # noqa: E402
 from codigo_llvm import (GeneradorLLVM, InterfazPixelLang, ir,      # noqa: E402
-                         simular_llvm, trazas_llvm, INDICE_INVALIDO)
+                         simular_llvm, trazas_llvm, INDICE_INVALIDO, INSTANCIAS)
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -154,8 +154,8 @@ with InterfazPixelLang(generador) as interfaz:
     assert traza[-1] == "  fin_aturdimiento  -> Derrotado    vida=0 daño_golpe=25 velocidad=0.0 y=0.0"
     # La interfaz rechaza índices que no existen sin tocar la memoria del personaje
     f = interfaz.funciones
-    assert f["pl_iniciar"](7) == INDICE_INVALIDO and f["pl_evento"](0, 99) == INDICE_INVALIDO
-    assert f["pl_estado"](7) == -1 and f["pl_error"](0) == 0
+    assert f["pl_iniciar"](INSTANCIAS) == INDICE_INVALIDO and f["pl_evento"](0, 99) == INDICE_INVALIDO
+    assert f["pl_estado"](INSTANCIAS) == -1 and f["pl_estado"](-1) == -1 and f["pl_error"](0) == 0
     assert f["pl_entero"](0, 2) == 0           # velocidad es real, no entero
 # En un estado final los eventos se ignoran; un error detiene la simulación
 ejecutar("personaje Puerta { eventos abrir, cerrar; inicial estado Cerrada { cuando abrir -> Abierta; } "
@@ -165,6 +165,24 @@ traza = ejecutar(personaje("a: entero = 0; b: entero = 1;",
                            "estado T { al_entrar { b = b / a; } cuando e -> S; }") + " simular P: e, e;")
 assert traza[1][1][-1][1] is None and len(traza[1][1]) == 2
 print("Ejemplos e interfaz: OK")
+
+# 7. Instancias: cada una tiene su propia ficha. La instancia n del personaje p es p + P·n,
+# con P el número de personajes (en juego.pxl, el caballero es 0 y el slime, 1)
+juego, _, generador_juego = compilar(open(os.path.join(ejemplos, "juego.pxl"), encoding="utf-8").read())
+with InterfazPixelLang(generador_juego) as interfaz:
+    f = interfaz.funciones
+    total = len(juego.personajes)
+    slimes = [1 + total * n for n in range(3)]
+    assert all(f["pl_iniciar"](i) == 0 for i in slimes) and f["pl_iniciar"](0) == 0
+    golpe = juego.personajes[1].eventos.index("recibir_golpe")
+    assert f["pl_evento"](slimes[1], golpe) == 0          # solo el segundo slime recibe el golpe
+    assert [f["pl_entero"](i, 0) for i in slimes] == [30, 20, 30]
+    assert [f["pl_estado"](i) for i in slimes] == [0, 2, 0]      # Patrulla, Aturdido, Patrulla
+    assert f["pl_estado"](0) == 0 and f["pl_entero"](0, 0) == 100   # el caballero no cambia
+    assert f["pl_iniciar"](total * INSTANCIAS - 1) == 0           # la última instancia existe
+    assert f["pl_iniciar"](total * INSTANCIAS) == INDICE_INVALIDO  # la siguiente no
+    assert f["pl_estado"](3 + total * 5) == -1                    # una instancia sin iniciar
+print(f"Instancias ({INSTANCIAS} por personaje): OK")
 
 # 7. Grafo de flujo de control (semana 13) de la función de transición fin_aturdimiento
 f = generador.funciones["Caballero.cuando_fin_aturdimiento"]

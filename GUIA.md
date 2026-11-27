@@ -164,19 +164,21 @@ El módulo tiene una función por procedimiento del código de tres direcciones 
 
 | Función | Qué hace |
 |---|---|
-| `int pl_iniciar(int personaje)` | da los valores iniciales y entra al estado inicial; devuelve el código de error |
-| `int pl_evento(int personaje, int evento)` | ejecuta la función de transición del evento; devuelve el código de error |
-| `int pl_estado(int personaje)` | índice del estado actual (-1 si el índice del personaje no existe) |
-| `int pl_error(int personaje)` | código del último error de ejecución |
-| `int pl_entero`, `double pl_real`, `int pl_logico` (personaje, atributo) | valor de un atributo |
+| `int pl_iniciar(int instancia)` | da los valores iniciales y entra al estado inicial; devuelve el código de error |
+| `int pl_evento(int instancia, int evento)` | ejecuta la función de transición del evento; devuelve el código de error |
+| `int pl_estado(int instancia)` | índice del estado actual (-1 si la instancia no existe o no se inició) |
+| `int pl_error(int instancia)` | código del último error de ejecución |
+| `int pl_entero`, `double pl_real`, `int pl_logico` (instancia, atributo) | valor de un atributo |
 
-Los índices siguen el orden de declaración del programa y están en el `.json`. Los códigos de error son 0 sin error, 1 división entre cero, 2 desbordamiento de entero y 3 índice inválido. Después de un error, el personaje no responde a más eventos hasta volver a llamar a `pl_iniciar`, igual que la simulación sobre el TAC se detiene.
+Los índices de personajes, eventos y atributos siguen el orden de declaración del programa y están en el `.json`. Cada personaje tiene 64 instancias (`instancias_por_personaje` en el `.json`), y cada instancia tiene su ficha: su estado, sus atributos y su código de error. La instancia `n` del personaje `p` es el número `p + P·n`, donde `P` es el número de personajes del programa; así, `0` a `P - 1` son la primera instancia de cada personaje. En `ejemplos/juego.pxl` (`P = 2`), el caballero es la instancia 0 y los dos slimes del minijuego, la 1 y la 3. Por dentro, la interfaz copia la ficha en las variables globales del personaje, llama a la función del evento y guarda la ficha de nuevo, así que el código de cada personaje es uno solo para todas sus instancias.
+
+Los códigos de error son 0 sin error, 1 división entre cero, 2 desbordamiento de entero y 3 instancia, evento o atributo inválido. Después de un error, esa instancia no responde a más eventos hasta volver a llamar a `pl_iniciar`, igual que la simulación sobre el TAC se detiene.
 
 ## 10. Escena de Unity
 
 La carpeta `unity` es un proyecto de Unity 6.3 (plantilla Universal 2D). Para abrirlo, en Unity Hub se elige **Add > Add project from disk** y la carpeta `unity`; luego se abre la escena `Assets/Scenes/JuegoPixelLang.unity` y se presiona Play. La DLL está en `Assets/Plugins/x86_64` y su mapa, en `Assets/Resources/pixellang.json`; las dos salen de `ejemplos/juego.pxl`, que tiene dos personajes: el caballero (índice 0) y el slime (índice 1).
 
-La escena `JuegoPixelLang` es un minijuego: el caballero se controla con el teclado y un slime lo persigue. El script de C# es el cuerpo de los personajes y la DLL es su cerebro. El script convierte lo que pasa en el juego en eventos y los envía con `pl_evento`; la DLL decide el estado y los atributos, y el script solo los dibuja.
+La escena `JuegoPixelLang` es un minijuego: el caballero se controla con el teclado y dos slimes lo persiguen. Los dos slimes son dos instancias del personaje Slime (la 1 y la 3): siguen la misma función de transición, pero cada uno tiene su propio estado y su propia vida. El script de C# es el cuerpo de los personajes y la DLL es su cerebro. El script convierte lo que pasa en el juego en eventos y los envía con `pl_evento`; la DLL decide el estado y los atributos, y el script solo los dibuja.
 
 | Lo que pasa en el juego | Evento | Personaje |
 |---|---|---|
@@ -188,7 +190,7 @@ La escena `JuegoPixelLang` es un minijuego: el caballero se controla con el tecl
 | el caballero entra a su campo de visión o sale de él | `ver_jugador`, `perder_jugador` | slime |
 | termina su aturdimiento | `fin_aturdimiento` | slime |
 
-Si un evento no tiene transición en el estado actual, la DLL lo ignora: por ejemplo, `atacar` mientras el caballero está Aturdido. Abajo, la escena muestra la función de transición δ de cada personaje y resalta la transición que se acaba de tomar; un evento ignorado aparece en naranja. La partida termina cuando un personaje llega a su estado final (Derrotado o Aplastado); R reinicia y Tab abre la escena de validación.
+Si un evento no tiene transición en el estado actual, la DLL lo ignora: por ejemplo, `atacar` mientras el caballero está Aturdido. Abajo, la escena muestra la función de transición δ de cada personaje y resalta la transición que se acaba de tomar; un evento ignorado aparece en naranja. La partida termina cuando el caballero llega a Derrotado o los dos slimes llegan a Aplastado; R reinicia y Tab abre la escena de validación.
 
 La escena `DemoPixelLang` es la validación: el botón **Ejecutar la simulación** repite el bloque `simular` del caballero y compara cada paso con la traza de la máquina de TAC guardada en el mapa.
 
@@ -207,7 +209,7 @@ unity test unity --mode PlayMode
 unity run unity -- -executeMethod EscenaPixelLang.ConstruirWindows
 ```
 
-El primer comando ejecuta las seis pruebas de Unity (nivel 9 del plan de validación) y el segundo construye el reproductor de Windows en `unity/Build`; el reproductor empieza en el minijuego. El menú **PixelLang** del editor tiene las mismas dos acciones: crear las escenas y construir para Windows.
+El primer comando ejecuta las siete pruebas de Unity (nivel 9 del plan de validación) y el segundo construye el reproductor de Windows en `unity/Build`; el reproductor empieza en el minijuego. El menú **PixelLang** del editor tiene las mismas dos acciones: crear las escenas y construir para Windows.
 
 ## 11. Pruebas
 

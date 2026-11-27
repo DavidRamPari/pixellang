@@ -8,12 +8,15 @@ public class ActorPixelLang
 {
     public readonly PersonajeNativo nativo;
 
-    public ActorPixelLang(PersonajePixelLang datos)
+    public ActorPixelLang(PersonajePixelLang datos) : this(datos, datos.indice) { }
+
+    public ActorPixelLang(PersonajePixelLang datos, int instancia)
     {
-        nativo = new PersonajeNativo(datos);
+        nativo = new PersonajeNativo(datos, instancia);
     }
 
     public PersonajePixelLang Datos { get { return nativo.datos; } }
+    public int Instancia { get { return nativo.instancia; } }
     public TransicionPixelLang[] Delta { get { return nativo.datos.transiciones ?? new TransicionPixelLang[0]; } }
     public string Estado { get { return nativo.Estado; } }
     public bool EnEstadoFinal { get { return nativo.EnEstadoFinal; } }

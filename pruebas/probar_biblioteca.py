@@ -20,7 +20,7 @@ from ast_pixellang import construir_ast                                 # noqa: 
 from codigo_intermedio import GeneradorTAC                              # noqa: E402
 from maquina_tac import trazas                                          # noqa: E402
 from codigo_llvm import (GeneradorLLVM, InterfazPixelLang, emitir,      # noqa: E402
-                         trazas_llvm, INDICE_INVALIDO)
+                         trazas_llvm, INDICE_INVALIDO, INSTANCIAS)
 from biblioteca_nativa import enlazar                                   # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -53,7 +53,7 @@ with InterfazPixelLang(biblioteca=biblioteca) as interfaz:
     assert obtenido == esperado, (obtenido, esperado)
     f = interfaz.funciones
     assert f["pl_iniciar"](-1) == INDICE_INVALIDO and f["pl_evento"](0, 999) == INDICE_INVALIDO
-    assert f["pl_estado"](5) == -1
+    assert f["pl_estado"](INSTANCIAS) == -1
     # Se puede volver a iniciar al personaje y seguir enviándole eventos (saltar: Saltando)
     assert f["pl_iniciar"](0) == 0 and f["pl_evento"](0, 0) == 0 and f["pl_estado"](0) == 1
 pasos = sum(len(p) for _, p in obtenido)
@@ -77,7 +77,11 @@ with InterfazPixelLang(biblioteca=biblioteca) as interfaz:
     assert f["pl_iniciar"](0) == 0 and f["pl_iniciar"](1) == 0
     assert f["pl_evento"](1, 0) == 0                      # ver_jugador solo cambia al slime
     assert f["pl_estado"](1) == 1 and f["pl_estado"](0) == 0
-    assert f["pl_iniciar"](2) == INDICE_INVALIDO
+    # Un segundo slime (instancia 1 + 2·1 = 3) tiene su propia ficha
+    assert f["pl_iniciar"](3) == 0 and f["pl_evento"](3, 2) == 0      # recibir_golpe
+    assert (f["pl_entero"](3, 0), f["pl_entero"](1, 0)) == (20, 30)
+    assert f["pl_estado"](3) == 2 and f["pl_estado"](1) == 1
+    assert f["pl_iniciar"](2 * INSTANCIAS) == INDICE_INVALIDO
 mapa = json.load(open(f"{prefijo}.json", encoding="utf-8"))
 caballero, slime = mapa["personajes"]
 assert (caballero["nombre"], slime["nombre"]) == ("Caballero", "Slime")
@@ -89,4 +93,6 @@ pasos = [len(p) for _, p in obtenido]
 print(f"Dos personajes (juego.pxl): {pasos[0]} y {pasos[1]} pasos iguales a los de la máquina "
       f"de TAC; el mapa trae δ con {len(caballero['transiciones'])} y "
       f"{len(slime['transiciones'])} transiciones")
+assert mapa["instancias_por_personaje"] == INSTANCIAS
+print(f"Instancias: {INSTANCIAS} por personaje; dos slimes, cada uno con su ficha")
 print("fallos: 0")

@@ -39,7 +39,7 @@
       {
         "prueba": "probar_generados.py",
         "resultado": "pasa",
-        "segundos": 240.9,
+        "segundos": 192.6,
         "ultima_linea": "fallos: 0"
       }
     ],
@@ -47,7 +47,7 @@
       {
         "prueba": "probar_llvm.py",
         "resultado": "pasa",
-        "segundos": 0.6,
+        "segundos": 1.0,
         "ultima_linea": "CFG: OK"
       }
     ],
@@ -62,6 +62,6 @@
   },
   "llvmlite": "0.50.0",
   "llvm": "22.1.0",
-  "segundos": 242.5,
+  "segundos": 194.5,
   "fallos": 0
 }

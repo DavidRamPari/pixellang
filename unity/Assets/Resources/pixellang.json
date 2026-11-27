@@ -184,6 +184,7 @@
       ]
     }
   ],
+  "instancias_por_personaje": 64,
   "errores": [
     {
       "codigo": 1,
@@ -195,7 +196,7 @@
     },
     {
       "codigo": 3,
-      "mensaje": "personaje, evento o atributo inválido"
+      "mensaje": "instancia, evento o atributo inválido"
     }
   ],
   "simulaciones": [

@@ -1,6 +1,8 @@
 // Programa del minijuego de Unity: el caballero que controla el jugador y el slime enemigo.
-// Los dos personajes se compilan juntos en una sola biblioteca (pixellang.dll); el juego
-// les envía los eventos con pl_evento(personaje, evento): 0 es el caballero y 1, el slime.
+// Los dos personajes se compilan juntos en una sola biblioteca (pixellang.dll). Cada uno
+// tiene 64 instancias con su propia ficha; la instancia n del personaje p es el número
+// p + 2·n. El juego les envía los eventos con pl_evento(instancia, evento): 0 es el
+// caballero y 1 y 3, los dos slimes del minijuego.
 
 personaje Caballero {
     vida: entero = 100;

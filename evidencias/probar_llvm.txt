@@ -4,6 +4,7 @@ Cortocircuito: OK
 Función de transición: OK
 Casos límite (12): OK
 Ejemplos e interfaz: OK
+Instancias (64 por personaje): OK
 CFG de Caballero.cuando_fin_aturdimiento
   entry        br   sucesores: en_Aturdido, otro_estado   predecesores: -
   en_Aturdido  br   sucesores: tomar, siguiente           predecesores: entry

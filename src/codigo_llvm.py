@@ -17,6 +17,13 @@ código de error del personaje y la función termina sin ejecutar las acciones q
 
 El juego usa el código a través de una interfaz C con índices (pl_iniciar, pl_evento,
 pl_estado, ...): es la que exporta la biblioteca nativa que llama Unity.
+
+Cada personaje puede tener varias instancias (por ejemplo, tres slimes), cada una con su
+propia ficha: una copia de sus atributos, su estado y su código de error. Los
+procedimientos trabajan sobre la memoria del personaje, igual que en el TAC; antes de
+ejecutar uno, la interfaz copia ahí la ficha de la instancia y después la guarda. La
+instancia n del personaje p es p + P·n, donde P es el número de personajes, así que la
+instancia p es la primera ficha del personaje p.
 """
 import ctypes
 import json
@@ -37,17 +44,20 @@ COMPARACIONES = ("<", ">", "<=", ">=", "==", "!=")
 SIN_ERROR, DIVISION_ENTRE_CERO, DESBORDAMIENTO, INDICE_INVALIDO = 0, 1, 2, 3
 ERRORES = {DIVISION_ENTRE_CERO: "división entre cero",
            DESBORDAMIENTO: "desbordamiento de entero",
-           INDICE_INVALIDO: "personaje, evento o atributo inválido"}
+           INDICE_INVALIDO: "instancia, evento o atributo inválido"}
+
+# Instancias (fichas) de cada personaje que guarda la biblioteca
+INSTANCIAS = 64
 
 # Interfaz C: nombre -> (tipo que devuelve, parámetros)
 INTERFAZ = {
-    "pl_iniciar": (ctypes.c_int32, ["personaje"]),
-    "pl_evento": (ctypes.c_int32, ["personaje", "evento"]),
-    "pl_estado": (ctypes.c_int32, ["personaje"]),
-    "pl_error": (ctypes.c_int32, ["personaje"]),
-    "pl_entero": (ctypes.c_int32, ["personaje", "atributo"]),
-    "pl_real": (ctypes.c_double, ["personaje", "atributo"]),
-    "pl_logico": (ctypes.c_int32, ["personaje", "atributo"]),
+    "pl_iniciar": (ctypes.c_int32, ["instancia"]),
+    "pl_evento": (ctypes.c_int32, ["instancia", "evento"]),
+    "pl_estado": (ctypes.c_int32, ["instancia"]),
+    "pl_error": (ctypes.c_int32, ["instancia"]),
+    "pl_entero": (ctypes.c_int32, ["instancia", "atributo"]),
+    "pl_real": (ctypes.c_double, ["instancia", "atributo"]),
+    "pl_logico": (ctypes.c_int32, ["instancia", "atributo"]),
 }
 
 
@@ -95,6 +105,16 @@ class GeneradorLLVM:
         g.initializer = ir.Constant(tipo, inicial)
         return g
 
+    def arreglo_global(self, nombre, tipo, inicial=0):
+        """Una variable por instancia: un arreglo de INSTANCIAS elementos."""
+        arreglo = ir.ArrayType(tipo, INSTANCIAS)
+        g = ir.GlobalVariable(self.module, arreglo, self.module.get_unique_name(nombre_llvm(nombre)))
+        g.linkage = "internal"
+        # un arreglo de ceros se escribe zeroinitializer; el del estado empieza en -1
+        g.initializer = (ir.Constant(arreglo, None) if inicial == 0
+                         else ir.Constant(arreglo, [ir.Constant(tipo, inicial)] * INSTANCIAS))
+        return g
+
     def declarar_personaje(self, pj):
         p = pj.nombre
         self.memorias.append({
@@ -102,6 +122,13 @@ class GeneradorLLVM:
                           for a in pj.atributos},
             "estado": self.variable_global(f"{p}.estado", I32, -1),
             "error": self.variable_global(f"{p}.error", I32, SIN_ERROR),
+            # la ficha de cada instancia; la interfaz la copia a la memoria de arriba
+            "fichas": {
+                "atributos": {a.nombre: self.arreglo_global(f"{p}.fichas.{a.nombre}", TIPOS[a.tipo])
+                              for a in pj.atributos},
+                "estado": self.arreglo_global(f"{p}.fichas.estado", I32, -1),
+                "error": self.arreglo_global(f"{p}.fichas.error", I32, SIN_ERROR),
+            },
         })
         procedimientos = (["iniciar"] + [f"al_entrar_{e.nombre}" for e in pj.estados]
                           + [f"cuando_{ev}" for ev in pj.eventos])
@@ -331,68 +358,108 @@ class GeneradorLLVM:
         self.exportadas.append(nombre)
         return f, ir.IRBuilder(f.append_basic_block("entry"))
 
-    def por_personaje(self, f, b, invalido):
-        """switch sobre el índice del personaje; devuelve (k, personaje, memoria, bloque)."""
-        sw = b.switch(f.args[0], invalido)
+    def celda(self, b, arreglo, n):
+        """Dirección del elemento n de un arreglo de fichas (getelementptr)."""
+        return b.gep(arreglo, [ir.Constant(I32, 0), n], inbounds=True)
+
+    def cargar_ficha(self, b, mem, n):
+        """Copia la ficha de la instancia n a la memoria que usan los procedimientos."""
+        fichas = mem["fichas"]
+        for nombre, g in mem["atributos"].items():
+            b.store(b.load(self.celda(b, fichas["atributos"][nombre], n)), g)
+        b.store(b.load(self.celda(b, fichas["estado"], n)), mem["estado"])
+        b.store(b.load(self.celda(b, fichas["error"], n)), mem["error"])
+
+    def guardar_ficha(self, b, mem, n):
+        """Guarda la memoria del personaje en la ficha de la instancia n."""
+        fichas = mem["fichas"]
+        for nombre, g in mem["atributos"].items():
+            b.store(b.load(g), self.celda(b, fichas["atributos"][nombre], n))
+        b.store(b.load(mem["estado"]), self.celda(b, fichas["estado"], n))
+        b.store(b.load(mem["error"]), self.celda(b, fichas["error"], n))
+
+    def por_instancia(self, f, b, invalido):
+        """La instancia n del personaje p es p + P·n. Comprueba que la instancia exista y hace
+        un switch sobre p; devuelve (personaje, memoria, bloque, n)."""
+        total = ir.Constant(I32, len(self.programa.personajes))
+        instancia = f.args[0]
+        decodificar = f.append_basic_block("decodificar")
+        b.cbranch(b.icmp_signed("<", instancia, ir.Constant(I32, 0)), invalido, decodificar)
+        b.position_at_end(decodificar)
+        n = b.udiv(instancia, total, name="n")
+        p = b.urem(instancia, total, name="personaje")
+        elegir = f.append_basic_block("elegir")
+        b.cbranch(b.icmp_unsigned("<", n, ir.Constant(I32, INSTANCIAS)), elegir, invalido)
+        b.position_at_end(elegir)
+        sw = b.switch(p, invalido)
         for k, pj in enumerate(self.programa.personajes):
             bloque = f.append_basic_block(nombre_llvm(pj.nombre))
             sw.add_case(ir.Constant(I32, k), bloque)
-            yield k, pj, self.memorias[k], bloque
+            yield pj, self.memorias[k], bloque, n
 
     def generar_interfaz(self):
         """Funciones exportadas. Los índices siguen el orden de declaración, el mismo del
         mapa JSON que acompaña a la biblioteca."""
-        # int pl_iniciar(int personaje)
+        # int pl_iniciar(int instancia)
         f, b = self.funcion_interfaz("pl_iniciar")
         invalido = f.append_basic_block("invalido")
-        for _, pj, mem, bloque in self.por_personaje(f, b, invalido):
+        for pj, mem, bloque, n in self.por_instancia(f, b, invalido):
             b.position_at_end(bloque)
+            self.cargar_ficha(b, mem, n)
             b.call(self.funciones[f"{pj.nombre}.iniciar"], [])
+            self.guardar_ficha(b, mem, n)
             b.ret(b.load(mem["error"]))
         b.position_at_end(invalido)
         b.ret(ir.Constant(I32, INDICE_INVALIDO))
 
-        # int pl_evento(int personaje, int evento): después de un error ya no se ejecuta
-        # nada hasta volver a iniciar al personaje, como en la máquina de TAC
+        # int pl_evento(int instancia, int evento): después de un error ya no se ejecuta
+        # nada hasta volver a iniciar la instancia, como en la máquina de TAC
         f, b = self.funcion_interfaz("pl_evento")
         invalido = f.append_basic_block("invalido")
-        for _, pj, mem, bloque in self.por_personaje(f, b, invalido):
+        for pj, mem, bloque, n in self.por_instancia(f, b, invalido):
             b.position_at_end(bloque)
-            error = b.load(mem["error"])
+            error = b.load(self.celda(b, mem["fichas"]["error"], n))
             con_error = f.append_basic_block(nombre_llvm(f"{pj.nombre}.con_error"))
             despachar = f.append_basic_block(nombre_llvm(f"{pj.nombre}.despachar"))
             b.cbranch(b.icmp_signed("!=", error, ir.Constant(I32, SIN_ERROR)), con_error, despachar)
             b.position_at_end(con_error)
             b.ret(error)
             b.position_at_end(despachar)
+            self.cargar_ficha(b, mem, n)
             sw = b.switch(f.args[1], invalido)
+            fin = f.append_basic_block(nombre_llvm(f"{pj.nombre}.guardar"))
             for j, ev in enumerate(pj.eventos):
                 bloque_ev = f.append_basic_block(nombre_llvm(f"{pj.nombre}.{ev}"))
                 sw.add_case(ir.Constant(I32, j), bloque_ev)
                 b.position_at_end(bloque_ev)
                 b.call(self.funciones[f"{pj.nombre}.cuando_{ev}"], [])
-                b.ret(b.load(mem["error"]))
+                b.branch(fin)
+            f.blocks.remove(fin)                    # el bloque que guarda va al final
+            f.blocks.append(fin)
+            b.position_at_end(fin)
+            self.guardar_ficha(b, mem, n)
+            b.ret(b.load(mem["error"]))
         b.position_at_end(invalido)
         b.ret(ir.Constant(I32, INDICE_INVALIDO))
 
-        # int pl_estado(int personaje) e int pl_error(int personaje)
+        # int pl_estado(int instancia) e int pl_error(int instancia)
         for nombre, campo, si_invalido in (("pl_estado", "estado", -1),
                                            ("pl_error", "error", INDICE_INVALIDO)):
             f, b = self.funcion_interfaz(nombre)
             invalido = f.append_basic_block("invalido")
-            for _, _, mem, bloque in self.por_personaje(f, b, invalido):
+            for _, mem, bloque, n in self.por_instancia(f, b, invalido):
                 b.position_at_end(bloque)
-                b.ret(b.load(mem[campo]))
+                b.ret(b.load(self.celda(b, mem["fichas"][campo], n)))
             b.position_at_end(invalido)
             b.ret(ir.Constant(I32, si_invalido))
 
-        # int pl_entero, double pl_real e int pl_logico (personaje, atributo): un atributo de
+        # int pl_entero, double pl_real e int pl_logico (instancia, atributo): un atributo de
         # otro tipo o un índice fuera de rango devuelven 0
         for nombre, tipo in (("pl_entero", "entero"), ("pl_real", "real"), ("pl_logico", "logico")):
             f, b = self.funcion_interfaz(nombre)
             cero = ir.Constant(f.function_type.return_type, 0)
             invalido = f.append_basic_block("invalido")
-            for _, pj, mem, bloque in self.por_personaje(f, b, invalido):
+            for pj, mem, bloque, n in self.por_instancia(f, b, invalido):
                 b.position_at_end(bloque)
                 sw = b.switch(f.args[1], invalido)
                 for j, a in enumerate(pj.atributos):
@@ -401,7 +468,7 @@ class GeneradorLLVM:
                     bloque_a = f.append_basic_block(nombre_llvm(f"{pj.nombre}.{a.nombre}"))
                     sw.add_case(ir.Constant(I32, j), bloque_a)
                     b.position_at_end(bloque_a)
-                    valor = b.load(mem["atributos"][a.nombre])
+                    valor = b.load(self.celda(b, mem["fichas"]["atributos"][a.nombre], n))
                     b.ret(b.zext(valor, I32) if tipo == "logico" else valor)
             b.position_at_end(invalido)
             b.ret(cero)
@@ -428,6 +495,8 @@ def mapa_interfaz(programa, trazas_tac=None):
                                               "destino": t.destino}
                                              for e in pj.estados for t in e.transiciones]}
                            for k, pj in enumerate(programa.personajes)],
+            # la instancia n del personaje p es p + P·n (P = número de personajes)
+            "instancias_por_personaje": INSTANCIAS,
             "errores": [{"codigo": c, "mensaje": m} for c, m in ERRORES.items()],
             "simulaciones": []}
     if trazas_tac:

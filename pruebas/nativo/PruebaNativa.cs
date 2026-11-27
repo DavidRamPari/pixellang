@@ -50,10 +50,26 @@ public static class PruebaNativa
                 fallos++;
             n++;
         }
-        bool indices = PixelLangNative.pl_iniciar(-1) == 3 && PixelLangNative.pl_evento(k, 999) == 3
-                       && PixelLangNative.pl_estado(42) == -1;
-        Console.WriteLine(indices ? "Índices inválidos: rechazados con el código 3" : "Índices inválidos: NO se rechazaron");
+        // Hay P personajes con instancias_por_personaje instancias cada uno: los números válidos
+        // van de 0 a P·instancias - 1
+        int personajes = raiz.GetProperty("personajes").GetArrayLength();
+        int total = personajes * raiz.GetProperty("instancias_por_personaje").GetInt32();
+        bool indices = PixelLangNative.pl_iniciar(-1) == 3 && PixelLangNative.pl_iniciar(total) == 3
+                       && PixelLangNative.pl_evento(k, 999) == 3 && PixelLangNative.pl_estado(total) == -1;
+        Console.WriteLine(indices ? $"Índices inválidos: rechazados con el código 3 (hay {total} instancias)"
+                                  : "Índices inválidos: NO se rechazaron");
         if (!indices)
+            fallos++;
+        // La segunda instancia del personaje (k + P) tiene su propia ficha: iniciarla y enviarle
+        // un evento no cambia a la primera
+        int antes = PixelLangNative.pl_estado(k);
+        int segunda = k + personajes;
+        bool fichas = PixelLangNative.pl_iniciar(segunda) == 0 && PixelLangNative.pl_evento(segunda, 0) == 0
+                      && PixelLangNative.pl_estado(segunda) != PixelLangNative.pl_estado(k)
+                      && PixelLangNative.pl_estado(k) == antes;
+        Console.WriteLine(fichas ? $"Instancias: la instancia {segunda} no cambia a la instancia {k}"
+                                 : "Instancias: las fichas NO son independientes");
+        if (!fichas)
             fallos++;
         Console.WriteLine($"C# con DllImport: {n} pasos comparados con la máquina de TAC, fallos: {fallos}");
         return fallos == 0 ? 0 : 1;
