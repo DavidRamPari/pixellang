@@ -57,10 +57,23 @@ def main():
                     help="muestra el código de tres direcciones como triples")
     ap.add_argument("--simular", action="store_true",
                     help="ejecuta los bloques simular sobre el código de tres direcciones")
+    ap.add_argument("--llvm", action="store_true", help="muestra el código LLVM IR verificado")
+    ap.add_argument("--jit", action="store_true",
+                    help="ejecuta los bloques simular con el código LLVM compilado con JIT")
+    ap.add_argument("--emitir", metavar="PREFIJO",
+                    help="guarda el LLVM IR, el código objeto, el ensamblador y el mapa de la interfaz")
+    ap.add_argument("--biblioteca", action="store_true",
+                    help="enlaza la biblioteca nativa (DLL en Windows); requiere --emitir")
     args = ap.parse_args()
+    if args.biblioteca and not args.emitir:
+        ap.error("--biblioteca requiere --emitir PREFIJO")
 
-    with open(args.archivo, encoding="utf-8") as f:
-        fuente = f.read()
+    try:
+        with open(args.archivo, encoding="utf-8") as f:
+            fuente = f.read()
+    except (OSError, UnicodeError) as e:
+        print(f"No se pudo leer el archivo: {e}")
+        return 2
 
     if args.tokens:
         lista, _ = tokens(fuente)
@@ -110,6 +123,15 @@ def main():
     if args.triples:
         imprimir_triples(codigo)
 
+    # Generación de código con LLVM (hito 3); llvmlite solo se carga si se pide
+    generador = None
+    if args.llvm or args.jit or args.emitir:
+        from codigo_llvm import GeneradorLLVM
+        generador = GeneradorLLVM(programa)
+        generador.generar()
+        if args.llvm:
+            print(generador.module)
+
     print("Sin errores léxicos, sintácticos ni semánticos.")
     if args.simular:
         print()
@@ -117,6 +139,28 @@ def main():
             print("\n".join(simular(programa, codigo)))
         else:
             print("El programa no tiene bloques simular.")
+    if args.jit:
+        from codigo_llvm import InterfazPixelLang, simular_llvm
+        print()
+        if programa.simulaciones:
+            print("Código LLVM compilado con JIT")
+            with InterfazPixelLang(generador) as interfaz:
+                print("\n".join(simular_llvm(programa, interfaz)))
+        else:
+            print("El programa no tiene bloques simular.")
+    if args.emitir:
+        from codigo_llvm import emitir
+        from maquina_tac import trazas
+        prefijo = emitir(generador, args.emitir, trazas(programa, codigo))
+        print()
+        print(f"Archivos generados: {prefijo}.ll, objeto, ensamblador, .json y .def")
+        if args.biblioteca:
+            from biblioteca_nativa import enlazar
+            try:
+                print(f"Biblioteca nativa: {enlazar(prefijo)}")
+            except RuntimeError as e:
+                print(f"No se pudo enlazar la biblioteca: {e}")
+                return 2
     return 0
 
 
