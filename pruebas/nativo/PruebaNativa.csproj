@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Prueba de la biblioteca nativa desde C#, fuera de Unity (dotnet run). Usa las mismas
+       declaraciones DllImport que el proyecto de Unity. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../unity/Assets/PixelLang/PixelLangNative.cs" Link="PixelLangNative.cs" />
+    <None Include="../../build/pixellang.dll" Condition="Exists('../../build/pixellang.dll')" CopyToOutputDirectory="PreserveNewest" Link="pixellang.dll" />
+    <None Include="../../build/pixellang.so" Condition="Exists('../../build/pixellang.so')" CopyToOutputDirectory="PreserveNewest" Link="pixellang.so" />
+    <None Include="../../build/pixellang.json" CopyToOutputDirectory="PreserveNewest" Link="pixellang.json" />
+  </ItemGroup>
+</Project>

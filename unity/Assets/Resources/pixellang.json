@@ -1,0 +1,212 @@
+{
+  "personajes": [
+    {
+      "indice": 0,
+      "nombre": "Caballero",
+      "estados": [
+        "Reposo",
+        "Saltando",
+        "Atacando",
+        "Aturdido",
+        "Derrotado"
+      ],
+      "finales": [
+        "Derrotado"
+      ],
+      "eventos": [
+        "saltar",
+        "atacar",
+        "aterrizar",
+        "fin_ataque",
+        "recibir_golpe",
+        "fin_aturdimiento"
+      ],
+      "atributos": [
+        {
+          "indice": 0,
+          "nombre": "vida",
+          "tipo": "entero"
+        },
+        {
+          "indice": 1,
+          "nombre": "daño_golpe",
+          "tipo": "entero"
+        },
+        {
+          "indice": 2,
+          "nombre": "velocidad",
+          "tipo": "real"
+        },
+        {
+          "indice": 3,
+          "nombre": "y",
+          "tipo": "real"
+        }
+      ]
+    }
+  ],
+  "errores": [
+    {
+      "codigo": 1,
+      "mensaje": "división entre cero"
+    },
+    {
+      "codigo": 2,
+      "mensaje": "desbordamiento de entero"
+    },
+    {
+      "codigo": 3,
+      "mensaje": "personaje, evento o atributo inválido"
+    }
+  ],
+  "simulaciones": [
+    {
+      "personaje": 0,
+      "pasos": [
+        {
+          "evento": "inicio",
+          "estado": "Reposo",
+          "valores": [
+            100.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "saltar",
+          "estado": "Saltando",
+          "valores": [
+            100.0,
+            25.0,
+            0.0,
+            2.5
+          ],
+          "error": ""
+        },
+        {
+          "evento": "aterrizar",
+          "estado": "Reposo",
+          "valores": [
+            100.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "atacar",
+          "estado": "Atacando",
+          "valores": [
+            100.0,
+            25.0,
+            1.5,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_ataque",
+          "estado": "Reposo",
+          "valores": [
+            100.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            75.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            50.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            25.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_aturdimiento",
+          "estado": "Reposo",
+          "valores": [
+            25.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "atacar",
+          "estado": "Atacando",
+          "valores": [
+            25.0,
+            25.0,
+            1.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_ataque",
+          "estado": "Reposo",
+          "valores": [
+            25.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            0.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_aturdimiento",
+          "estado": "Derrotado",
+          "valores": [
+            0.0,
+            25.0,
+            0.0,
+            0.0
+          ],
+          "error": ""
+        }
+      ]
+    }
+  ]
+}

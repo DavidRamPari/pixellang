@@ -1,0 +1,3 @@
+3000 programas generados, 6779 simulaciones y 40210 eventos comparados (1842 simulaciones terminan en un error de ejecución)
+implementaciones comparadas: intérprete de referencia, máquina de TAC y LLVM con JIT
+fallos: 0

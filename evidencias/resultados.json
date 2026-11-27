@@ -1,0 +1,67 @@
+{
+  "python": "3.12.10",
+  "sistema": "Windows-11-10.0.26300-SP0",
+  "programas_al_azar": 3000,
+  "semilla": 7,
+  "niveles": {
+    "1 a 3. Léxico, sintáctico y semántico": [
+      {
+        "prueba": "pruebas/lexico, pruebas/sintactico y pruebas/semantico",
+        "resultado": "pasa",
+        "archivos": 22
+      }
+    ],
+    "2. Sintáctico": [
+      {
+        "prueba": "probar_construcciones.py",
+        "resultado": "pasa",
+        "segundos": 0.2,
+        "ultima_linea": "fallos: 0"
+      }
+    ],
+    "4. AST": [
+      {
+        "prueba": "probar_ast.py",
+        "resultado": "pasa",
+        "segundos": 0.2,
+        "ultima_linea": "Listado del AST: OK"
+      }
+    ],
+    "5. Código intermedio": [
+      {
+        "prueba": "probar_tac.py",
+        "resultado": "pasa",
+        "segundos": 0.2,
+        "ultima_linea": "Simulación: OK"
+      }
+    ],
+    "6 y 8. Prueba diferencial": [
+      {
+        "prueba": "probar_generados.py",
+        "resultado": "pasa",
+        "segundos": 168.3,
+        "ultima_linea": "fallos: 0"
+      }
+    ],
+    "8. Código LLVM": [
+      {
+        "prueba": "probar_llvm.py",
+        "resultado": "pasa",
+        "segundos": 0.7,
+        "ultima_linea": "CFG: OK"
+      }
+    ],
+    "8. Biblioteca nativa": [
+      {
+        "prueba": "probar_biblioteca.py",
+        "resultado": "pasa",
+        "segundos": 0.5,
+        "ultima_linea": "fallos: 0"
+      }
+    ]
+  },
+  "llvmlite": "0.50.0",
+  "llvm": "22.1.0",
+  "segundos": 170.1,
+  "fallos": 0
+}

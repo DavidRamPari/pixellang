@@ -1,11 +1,12 @@
-"""Prueba diferencial del código intermedio.
+"""Prueba diferencial del código intermedio y del código LLVM.
 
 Genera programas válidos al azar y, para cada uno, comprueba que:
 1. pase el análisis léxico, sintáctico y semántico sin errores;
 2. el TAC esté bien formado (verificar_tac: temporales definidos antes de usarse,
    saltos y llamadas a etiquetas que existen, procedimientos que terminan en return);
 3. la traza de cada simulación ejecutada sobre el TAC sea igual a la del
-   intérprete de referencia, que recorre el AST sin pasar por el TAC.
+   intérprete de referencia, que recorre el AST sin pasar por el TAC;
+4. el módulo LLVM pase verify() y, ejecutado con JIT, dé la misma traza (hito 3).
 
 Uso: python pruebas/probar_generados.py [cantidad] [semilla]
 """
@@ -23,6 +24,7 @@ from codigo_intermedio import GeneradorTAC, verificar_tac   # noqa: E402
 from maquina_tac import trazas                              # noqa: E402
 from generador import generar_programa                      # noqa: E402
 from referencia import simular_referencia                   # noqa: E402
+from codigo_llvm import GeneradorLLVM, InterfazPixelLang, trazas_llvm  # noqa: E402
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -65,6 +67,12 @@ for n in range(1, cantidad + 1):
             tac, ref = trazas(programa, codigo), simular_referencia(programa)
             if comparable(tac) != comparable(ref):
                 problema = "la traza del TAC no coincide con la del intérprete de referencia"
+            else:
+                generador_llvm = GeneradorLLVM(programa)
+                generador_llvm.generar()            # incluye verify()
+                with InterfazPixelLang(generador_llvm) as interfaz:
+                    if comparable(trazas_llvm(programa, interfaz)) != comparable(tac):
+                        problema = "la traza del código LLVM no coincide con la del TAC"
             simulaciones += len(tac)
             pasos += sum(len(p) for _, p in tac)
             con_error += sum(1 for _, p in tac if p and p[-1][1] is None)
@@ -75,4 +83,5 @@ for n in range(1, cantidad + 1):
 
 print(f"{cantidad} programas generados, {simulaciones} simulaciones y {pasos} eventos "
       f"comparados ({con_error} simulaciones terminan en un error de ejecución)")
+print("implementaciones comparadas: intérprete de referencia, máquina de TAC y LLVM con JIT")
 print("fallos:", fallos)

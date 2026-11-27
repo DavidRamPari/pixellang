@@ -1,0 +1,23 @@
+lexico/l0_tokens.pxl: 0 errores léxicos
+lexico/l1_arroba.pxl: 1 errores léxicos
+lexico/l2_real_incompleto.pxl: 1 errores léxicos
+lexico/l3_numeral.pxl: 1 errores léxicos
+lexico/l4_dos_puntos_decimales.pxl: 1 errores léxicos
+lexico/l5_ampersand_suelto.pxl: 1 errores léxicos
+sintactico/s1_falta_punto_coma.pxl: 1 errores
+sintactico/s2_falta_flecha.pxl: 1 errores
+sintactico/s3_si_sin_llaves.pxl: 2 errores
+sintactico/s4_sin_eventos.pxl: 2 errores
+sintactico/s5_transicion_fuera_de_estado.pxl: 1 errores
+sintactico/s6_estado_sin_nombre.pxl: 1 errores
+semantico/e01_estado_no_declarado.pxl: E01
+semantico/e02_evento_no_declarado.pxl: E02
+semantico/e03_no_determinista.pxl: E03
+semantico/e04_sin_inicial.pxl: E04
+semantico/e05_inalcanzable.pxl: E05
+semantico/e06_redeclaracion.pxl: E06
+semantico/e07_atributo_no_declarado.pxl: E07
+semantico/e08_tipos.pxl: E08
+semantico/e09_final_con_salida.pxl: E09
+semantico/e10_simular_inexistente.pxl: E10
+fallos: 0

@@ -1,0 +1,5 @@
+Expresiones, cuádruplos y triples: OK
+Conversiones y operadores unarios: OK
+Cortocircuito y si/sino: OK
+Nombres de temporales: OK
+Simulación: OK

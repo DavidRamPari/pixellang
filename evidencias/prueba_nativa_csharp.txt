@@ -1,0 +1,15 @@
+Paso  0  inicio            Reposo     vida=100 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  1  saltar            Saltando   vida=100 daño_golpe=25 velocidad=0 y=2.5  coincide
+Paso  2  aterrizar         Reposo     vida=100 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  3  atacar            Atacando   vida=100 daño_golpe=25 velocidad=1.5 y=0  coincide
+Paso  4  fin_ataque        Reposo     vida=100 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  5  recibir_golpe     Aturdido   vida=75 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  6  recibir_golpe     Aturdido   vida=50 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  7  recibir_golpe     Aturdido   vida=25 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  8  fin_aturdimiento  Reposo     vida=25 daño_golpe=25 velocidad=0 y=0  coincide
+Paso  9  atacar            Atacando   vida=25 daño_golpe=25 velocidad=1 y=0  coincide
+Paso 10  fin_ataque        Reposo     vida=25 daño_golpe=25 velocidad=0 y=0  coincide
+Paso 11  recibir_golpe     Aturdido   vida=0 daño_golpe=25 velocidad=0 y=0  coincide
+Paso 12  fin_aturdimiento  Derrotado  vida=0 daño_golpe=25 velocidad=0 y=0  coincide
+Índices inválidos: rechazados con el código 3
+C# con DllImport: 13 pasos comparados con la máquina de TAC, fallos: 0

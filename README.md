@@ -1,6 +1,6 @@
 # PixelLang
 
-Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa, verifica que ese autómata esté bien formado y genera su código intermedio (código de tres direcciones), sobre el que se ejecutan los bloques `simular`.
+Lenguaje de dominio específico para describir la máquina de estados de los personajes de un videojuego 2D. Cada personaje es un autómata finito A = {Q, Σ, δ, q0, F}: sus estados forman Q, sus eventos forman el alfabeto Σ y sus transiciones definen δ. El compilador hace el análisis léxico, sintáctico y semántico de un programa, verifica que ese autómata esté bien formado, genera su código intermedio (código de tres direcciones) y lo traduce a LLVM IR, que se ejecuta con JIT o se enlaza como una biblioteca nativa. Una escena de Unity usa esa biblioteca: el juego envía los eventos y el código generado decide el estado del personaje.
 
 Trabajo Parcial y Final de Teoría de Compiladores, Universidad Peruana de Ciencias Aplicadas, 2026.
 
@@ -12,6 +12,16 @@ Trabajo Parcial y Final de Teoría de Compiladores, Universidad Peruana de Cienc
 | U202417368 | Ramos Parihuaman, David Miguel |
 | U20241D937 | Quito Anccasi, Antony Rodrigo |
 | U202412516 | Monge Jiménez, Mateo Alonso |
+
+## Entrega del trabajo final (hito 3)
+
+| Entregable | Enlace |
+|---|---|
+| Informe | [docs/PixelLang_TrabajoFinal.pdf](docs/PixelLang_TrabajoFinal.pdf) |
+| Presentación | [docs/PixelLang_TrabajoFinal_Presentacion.pdf](docs/PixelLang_TrabajoFinal_Presentacion.pdf) |
+| Video de demostración | [docs/PixelLang_TrabajoFinal_Demo.mp4](docs/PixelLang_TrabajoFinal_Demo.mp4) |
+| Escena de Unity | carpeta [unity](unity) |
+| Evidencias de las pruebas | carpeta [evidencias](evidencias) |
 
 ## Entrega del segundo avance (hito 2)
 
@@ -41,7 +51,7 @@ personaje Puerta {
 simular Puerta: ser_abierta;
 ```
 
-El ejemplo completo, un caballero con atributos, guardas y acciones, está en [ejemplos/caballero.pxl](ejemplos/caballero.pxl). Con `--simular`, el compilador ejecuta su bloque `simular` sobre el código de tres direcciones:
+El ejemplo completo, un caballero con atributos, guardas y acciones, está en [ejemplos/caballero.pxl](ejemplos/caballero.pxl). Con `--simular`, el compilador ejecuta su bloque `simular` sobre el código de tres direcciones, y con `--jit`, sobre el código LLVM compilado; las dos trazas son iguales:
 
 ```
 simular Caballero
@@ -64,7 +74,9 @@ pip install -r requirements.txt
 java -jar antlr-4.13.2-complete.jar -Dlanguage=Python3 -visitor -no-listener -o src/generado -Xexact-output-dir gramatica/PixelLang.g4
 python src/main.py ejemplos/caballero.pxl --tokens --arbol --tabla
 python src/main.py ejemplos/caballero.pxl --ast --tac --simular
-python pruebas/correr_pruebas.py
+python src/main.py ejemplos/caballero.pxl --llvm --jit
+python src/main.py ejemplos/caballero.pxl --emitir build/pixellang --biblioteca
+python pruebas/validar_todo.py 3000 7
 ```
 
 | Opción | Qué muestra |
@@ -78,6 +90,10 @@ python pruebas/correr_pruebas.py
 | `--cuadruplos` | el código de tres direcciones como cuádruplos |
 | `--triples` | el código de tres direcciones como triples |
 | `--simular` | la ejecución de los bloques `simular` sobre el código de tres direcciones |
+| `--llvm` | el código LLVM IR, verificado con `verify()` |
+| `--jit` | la ejecución de los bloques `simular` con el código LLVM compilado con JIT |
+| `--emitir PREFIJO` | guarda el LLVM IR, el código objeto, el ensamblador y el mapa de la interfaz |
+| `--biblioteca` | con `--emitir`, enlaza la biblioteca nativa (DLL en Windows) |
 
 ## Estructura
 
@@ -90,10 +106,14 @@ python pruebas/correr_pruebas.py
 | `src/ast_pixellang.py` | Nodos del AST y visitor que lo construye |
 | `src/codigo_intermedio.py` | Generador de código de tres direcciones, cuádruplos y triples |
 | `src/maquina_tac.py` | Máquina que ejecuta el código de tres direcciones (opción `--simular`) |
+| `src/codigo_llvm.py` | Generador de LLVM IR con llvmlite, interfaz C, JIT y emisión del código objeto |
+| `src/biblioteca_nativa.py` | Enlace del código objeto como DLL (Windows) o `.so` (Linux) |
+| `unity/` | Proyecto de Unity 6.3 con la escena del caballero, la DLL y sus pruebas |
+| `evidencias/` | Salida de la última ejecución de todas las pruebas |
 | `ejemplos/` | Programas de ejemplo |
-| `pruebas/` | Pruebas léxicas, sintácticas, semánticas, del AST, del código intermedio y diferenciales |
+| `pruebas/` | Pruebas léxicas, sintácticas, semánticas, del AST, del código intermedio, del código LLVM, de la biblioteca nativa (también desde C#) y diferenciales |
 | `.vscode/` | Tarea para generar el parser y configuraciones de ejecución |
-| `docs/` | Informes de los hitos 1 y 2 y presentación del trabajo parcial |
+| `docs/` | Informes de los hitos 1, 2 y 3 y presentaciones del trabajo parcial y del trabajo final |
 
 ## Avance
 
@@ -103,4 +123,4 @@ Las tareas de cada hito están en los [issues](https://github.com/DavidRamPari/p
 |---|---|---|
 | 1 | Léxico, gramáticas y derivaciones, lexer y parser en ANTLR4, análisis semántico | Terminado |
 | 2 | Gramática actualizada, analizador semántico completo, AST, código de tres direcciones, simulación sobre el TAC, arquitectura del compilador y plan de validación | Terminado |
-| 3 | Generación de código con LLVM, resultados de la validación y conexión con Unity | Pendiente |
+| 3 | Generación de código con LLVM, biblioteca nativa, escena de Unity y resultados de la validación | Terminado |

@@ -1,0 +1,4 @@
+Biblioteca: pixellang.dll (3584 bytes), exporta pl_iniciar, pl_evento, pl_estado, pl_error, pl_entero, pl_real, pl_logico
+Traza de la biblioteca: 13 pasos, iguales a los de la máquina de TAC
+Mapa de la interfaz: pixellang.json con 13 pasos esperados
+fallos: 0

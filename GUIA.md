@@ -2,7 +2,7 @@
 
 Esta guía está pensada para Windows 10 u 11. Al final hay una sección con los cambios para WSL, Linux o macOS.
 
-Compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`. El driver hace el análisis léxico, sintáctico y semántico de un programa `.pxl`, construye su árbol de sintaxis abstracta (AST) y genera el código de tres direcciones, sobre el que se ejecutan los bloques `simular`. La generación de código con LLVM corresponde al hito 3.
+Compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de la gramática `PixelLang.g4` con ANTLR, y ejecutar el driver `src/main.py`. El driver hace el análisis léxico, sintáctico y semántico de un programa `.pxl`, construye su árbol de sintaxis abstracta (AST), genera el código de tres direcciones, sobre el que se ejecutan los bloques `simular`, y genera código LLVM, que se ejecuta con JIT o se enlaza como una biblioteca nativa (una DLL en Windows) que usa la escena de Unity de la carpeta `unity`.
 
 ## 1. Programas necesarios
 
@@ -12,6 +12,9 @@ Compilar PixelLang significa dos cosas: generar el lexer y el parser a partir de
 | Python 3.10 o superior | El compilador está escrito en Python | `py --version` |
 | Visual Studio Code | Editor | |
 | `antlr-4.13.2-complete.jar` | Genera el lexer y el parser | |
+| Visual Studio 2022 o posterior, con **Desarrollo para el escritorio con C++** | Solo para enlazar la DLL (usa su `link.exe`) | |
+| .NET SDK 8 o posterior | Solo para la prueba de la DLL desde C# fuera de Unity | `dotnet --list-sdks` |
+| Unity 6.3 LTS (6000.3.29f1) | Solo para la escena de la carpeta `unity` | Unity Hub |
 
 Si falta alguno, se puede instalar desde PowerShell con `winget`:
 
@@ -133,21 +136,82 @@ Para probar un programa propio, crea un archivo `.pxl` y pásalo como argumento.
 
 ## 8. Ejecutar con F5
 
-El archivo `.vscode/launch.json` tiene dos configuraciones, que aparecen en la pestaña **Run and Debug** (Ctrl+Shift+D):
+El archivo `.vscode/launch.json` tiene cuatro configuraciones, que aparecen en la pestaña **Run and Debug** (Ctrl+Shift+D):
 
 - **PixelLang: analizar el archivo abierto**: abre cualquier archivo `.pxl`, elige esta configuración y presiona F5. Primero se regenera el parser y luego se ejecuta `main.py` con `--tokens --arbol --tabla` sobre ese archivo.
+- **PixelLang: código LLVM y ejecución con JIT del archivo abierto**: lo mismo con `--llvm --jit`.
 - **PixelLang: correr todas las pruebas**: ejecuta `pruebas/correr_pruebas.py`.
+- **PixelLang: validar todo (niveles 1 a 8)**: ejecuta `pruebas/validar_todo.py 3000 7`.
 
-Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` para ver cómo el visitor llena la tabla de símbolos, o en `src/codigo_intermedio.py` para seguir la generación del código. Para ver el código intermedio o la simulación con F5, se agregan `--tac` o `--simular` a la lista `args` de la primera configuración.
+Como se ejecuta con el depurador, se pueden poner puntos de interrupción en `src/semantico.py` para ver cómo el visitor llena la tabla de símbolos, o en `src/codigo_intermedio.py` y `src/codigo_llvm.py` para seguir la generación del código. Para ver el código intermedio o la simulación con F5, se agregan `--tac` o `--simular` a la lista `args` de la primera configuración.
 
-## 9. Pruebas
+## 9. Código LLVM, JIT y biblioteca nativa (hito 3)
+
+```
+python src/main.py ejemplos/caballero.pxl --llvm
+python src/main.py ejemplos/caballero.pxl --jit
+python src/main.py ejemplos/caballero.pxl --emitir build/pixellang --biblioteca
+```
+
+| Opción | Qué hace |
+|---|---|
+| `--llvm` | muestra el módulo LLVM IR, después de verificarlo con `verify()` |
+| `--jit` | compila el módulo con JIT (MCJIT, como en el laboratorio 8) y ejecuta los bloques `simular`; la traza tiene que ser igual a la de `--simular` |
+| `--emitir PREFIJO` | guarda `PREFIJO.ll` (LLVM IR), el código objeto (`.obj` en Windows, `.o` en Linux), el ensamblador (`.s`), el mapa de la interfaz (`.json`) y la lista de funciones exportadas (`.def`) |
+| `--biblioteca` | con `--emitir`, enlaza la biblioteca nativa: `PREFIJO.dll` en Windows (con `link.exe` de Visual Studio) o `PREFIJO.so` en Linux |
+
+El módulo tiene una función por procedimiento del código de tres direcciones (`Caballero.iniciar`, `Caballero.al_entrar_Atacando`, `Caballero.cuando_saltar`...) y una interfaz C que es lo único que se exporta:
+
+| Función | Qué hace |
+|---|---|
+| `int pl_iniciar(int personaje)` | da los valores iniciales y entra al estado inicial; devuelve el código de error |
+| `int pl_evento(int personaje, int evento)` | ejecuta la función de transición del evento; devuelve el código de error |
+| `int pl_estado(int personaje)` | índice del estado actual (-1 si el índice del personaje no existe) |
+| `int pl_error(int personaje)` | código del último error de ejecución |
+| `int pl_entero`, `double pl_real`, `int pl_logico` (personaje, atributo) | valor de un atributo |
+
+Los índices siguen el orden de declaración del programa y están en el `.json`. Los códigos de error son 0 sin error, 1 división entre cero, 2 desbordamiento de entero y 3 índice inválido. Después de un error, el personaje no responde a más eventos hasta volver a llamar a `pl_iniciar`, igual que la simulación sobre el TAC se detiene.
+
+## 10. Escena de Unity
+
+La carpeta `unity` es un proyecto de Unity 6.3 (plantilla Universal 2D) con la DLL del caballero en `Assets/Plugins/x86_64` y su mapa en `Assets/Resources/pixellang.json`. Para abrirlo, en Unity Hub se elige **Add > Add project from disk** y la carpeta `unity`, y luego se abre la escena `Assets/Scenes/DemoPixelLang.unity` y se presiona Play.
+
+La escena dibuja al caballero, muestra su estado y sus atributos y tiene un botón por evento. El botón **Ejecutar la simulación** repite el bloque `simular` del programa y compara cada paso con la traza de la máquina de TAC: el script de C# no tiene reglas propias, solo llama a la DLL.
+
+Si se cambia el programa, se genera de nuevo la DLL y se copia al proyecto:
+
+```
+python src/main.py ejemplos/caballero.pxl --emitir build/pixellang --biblioteca
+copy build\pixellang.dll unity\Assets\Plugins\x86_64\
+copy build\pixellang.json unity\Assets\Resources\
+```
+
+Con Unity cerrado, también se puede usar la herramienta de línea de comandos de Unity (`winget install Unity.CLI`):
+
+```
+unity test unity --mode PlayMode
+unity run unity -- -executeMethod EscenaPixelLang.ConstruirWindows
+```
+
+El primer comando ejecuta las pruebas de Unity (nivel 9 del plan de validación) y el segundo construye el reproductor de Windows en `unity/Build`. El menú **PixelLang** del editor tiene las mismas dos acciones: crear la escena y construir para Windows.
+
+## 11. Pruebas
+
+```
+python pruebas/validar_todo.py 3000 7
+```
+
+Ese comando ejecuta todas las pruebas de los niveles 1 a 8 del plan de validación, guarda la salida de cada una en la carpeta `evidencias` y termina con `fallos: 0`. Cada prueba también se puede correr sola:
 
 ```
 python pruebas/probar_construcciones.py
 python pruebas/correr_pruebas.py
 python pruebas/probar_ast.py
 python pruebas/probar_tac.py
-python pruebas/probar_generados.py
+python pruebas/probar_llvm.py
+python pruebas/probar_biblioteca.py
+python pruebas/probar_generados.py 3000 7
+dotnet run --project pruebas/nativo
 ```
 
 | Comando | Resultado esperado |
@@ -156,11 +220,12 @@ python pruebas/probar_generados.py
 | `correr_pruebas.py` | la salida del compilador para cada prueba léxica, sintáctica y semántica |
 | `probar_ast.py` | `OK` en las pruebas de precedencia, asociatividad y estructura del AST |
 | `probar_tac.py` | `OK` en las pruebas del código de tres direcciones, los cuádruplos, los triples y la simulación |
-| `probar_generados.py` | `fallos: 0`: en 500 programas generados al azar, la simulación sobre el TAC da la misma traza que el intérprete de referencia, que recorre el AST |
+| `probar_llvm.py` | `OK` en las pruebas del código LLVM: bloques de si/sino y de la función de transición, cortocircuito con `phi`, casos límite de los enteros de 32 bits y de la división, ejemplos y grafo de flujo de control |
+| `probar_biblioteca.py` | enlaza la DLL del caballero, la carga con `ctypes` y termina con `fallos: 0` si su traza es igual a la de la máquina de TAC |
+| `probar_generados.py` | `fallos: 0`: en los programas generados al azar, el intérprete de referencia (que recorre el AST), la máquina de TAC y el código LLVM con JIT dan la misma traza |
+| `dotnet run --project pruebas/nativo` | la DLL usada desde C# con las mismas declaraciones `DllImport` del proyecto de Unity: `fallos: 0` (requiere haber generado `build/pixellang.dll`) |
 
-`probar_generados.py` acepta la cantidad de programas y una semilla, por ejemplo `python pruebas/probar_generados.py 3000 7`.
-
-## 10. Problemas comunes
+## 12. Problemas comunes
 
 | Mensaje | Causa y solución |
 |---|---|
@@ -172,8 +237,11 @@ python pruebas/probar_generados.py
 | Errores semánticos que hablan de `None`, como `no se puede asignar un valor None` | El parser de `src/generado` es de una versión anterior de la gramática. Vuelve a generarlo con el paso 6. |
 | `No such file or directory: 'ejemplos/caballero.pxl'` | La terminal no está en la carpeta `pixellang`. Muévete con `cd` a esa carpeta. |
 | Las tildes o la ñ se ven mal | Ejecuta `$env:PYTHONUTF8=1` en la terminal y vuelve a correr el comando. |
+| `No module named 'llvmlite'` | Falta instalar las dependencias del hito 3: `pip install -r requirements.txt`. |
+| `No se encontró link.exe` | Falta Visual Studio con **Desarrollo para el escritorio con C++**. Sin él se pueden usar `--llvm`, `--jit` y `--emitir`, pero no `--biblioteca`. |
+| `DllNotFoundException: pixellang` en Unity | Falta `Assets/Plugins/x86_64/pixellang.dll`, o se generó en otro sistema operativo. Genera la DLL en Windows y cópiala como en la sección 10. |
 
-## 11. WSL, Linux o macOS
+## 13. WSL, Linux o macOS
 
 Los pasos son los mismos con estos cambios:
 
@@ -184,5 +252,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 curl -L -o antlr-4.13.2-complete.jar https://www.antlr.org/download/antlr-4.13.2-complete.jar
 ```
+
+En Linux, `--biblioteca` genera `build/pixellang.so` con el compilador de C del sistema (`sudo apt install build-essential`), y `probar_biblioteca.py` la carga igual que la DLL. La escena de Unity del repositorio usa la DLL de Windows.
 
 En macOS, Java se instala con `brew install openjdk`. En lugar de `py` se usa `python3`, y el entorno se activa con `source .venv/bin/activate`. Para trabajar dentro de WSL desde VS Code, se instala la extensión **WSL** de Microsoft y se abre la carpeta con **WSL: Open Folder in WSL**.

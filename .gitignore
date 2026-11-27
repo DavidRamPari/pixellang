@@ -1,4 +1,16 @@
 src/generado/
 __pycache__/
+*.pyc
 .venv/
 *.jar
+build/
+pruebas/nativo/bin/
+pruebas/nativo/obj/
+unity/Library/
+unity/Temp/
+unity/Logs/
+unity/obj/
+unity/Build/
+unity/UserSettings/
+unity/*.sln
+unity/*.csproj
