@@ -157,7 +157,8 @@ def main():
         if args.biblioteca:
             from biblioteca_nativa import enlazar
             try:
-                print(f"Biblioteca nativa: {enlazar(prefijo)}")
+                biblioteca = enlazar(prefijo)
+                print(f"Biblioteca nativa: {prefijo.with_suffix(biblioteca.suffix)}")
             except RuntimeError as e:
                 print(f"No se pudo enlazar la biblioteca: {e}")
                 return 2

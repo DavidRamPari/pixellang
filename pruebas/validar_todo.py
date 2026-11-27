@@ -52,7 +52,7 @@ def ejecutar(nivel, script, *args):
         {"prueba": script, "resultado": "pasa" if ok else "falla",
          "segundos": round(time.perf_counter() - inicio, 1),
          "ultima_linea": salida.strip().splitlines()[-1] if salida.strip() else ""})
-    print(f"{nivel:<28} {script:<26} {'pasa' if ok else 'FALLA'}")
+    print(f"{nivel:<38} {script:<26} {'pasa' if ok else 'FALLA'}")
 
 
 def archivos(carpeta):
@@ -86,10 +86,10 @@ def revisar_errores():
     guardar("errores_esperados.txt", "\n".join(lineas) + "\n")
     fallos_totales += fallos > 0
     nivel = "1 a 3. Léxico, sintáctico y semántico"
-    resumen["niveles"][nivel] = [{"prueba": "archivos de pruebas/lexico, sintactico y semantico",
+    resumen["niveles"][nivel] = [{"prueba": "pruebas/lexico, pruebas/sintactico y pruebas/semantico",
                                   "resultado": "pasa" if fallos == 0 else "falla",
                                   "archivos": len(lineas) - 1}]
-    print(f"{nivel:<28} {'errores_esperados':<26} {'pasa' if fallos == 0 else 'FALLA'}")
+    print(f"{nivel:<38} {'errores_esperados':<26} {'pasa' if fallos == 0 else 'FALLA'}")
 
 
 inicio = time.perf_counter()
