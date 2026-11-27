@@ -5,9 +5,9 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from frontend import analizar                                      # noqa: E402
 from semantico import AnalizadorSemantico                          # noqa: E402
-from ast_pixellang import (construir_ast, ast_indentado, Programa, Personaje,  # noqa: E402
-                           Atributo, Estado, Transicion, Simulacion, Bloque, Asignacion,
-                           Seleccion, Numero, Logico, Variable, Unaria, Binaria)
+from ast_pixellang import (construir_ast, ast_indentado, texto_expresion, Programa,  # noqa: E402
+                           Personaje, Atributo, Estado, Transicion, Simulacion, Bloque,
+                           Asignacion, Seleccion, Numero, Logico, Variable, Unaria, Binaria)
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -95,3 +95,13 @@ assert any(linea.endswith('Transicion("fin_aturdimiento" -> "Derrotado")') for l
 assert '│   │   └── Numero(0.0)' in lineas
 assert ast_indentado(Numero(0.00001)) == ["Numero(0.00001)"]
 print("Listado del AST: OK")
+
+# El texto de una expresión (las guardas del mapa de la interfaz) vuelve a dar el mismo AST,
+# con paréntesis solo donde la precedencia o la asociatividad los necesitan
+for texto in ["a + b * c", "(a + b) * c", "a - (b - c)", "a / b / c", "-a * b", "-(a + b)",
+              "a + 1 < b * 2", "v || w && v", "(v || w) && v", "!(v && w)", "!v && w"]:
+    tipo = "logico" if any(op in texto for op in "<|&!") else "entero"
+    assert texto_expresion(expr(texto, tipo)) == texto, texto
+assert texto_expresion(Binaria("<=", Variable("vida"), Numero(0))) == "vida <= 0"
+assert texto_expresion(Numero(2.5)) == "2.5" and texto_expresion(Logico(False)) == "falso"
+print("Texto de las expresiones: OK")

@@ -145,7 +145,7 @@ print(f"Casos límite ({len(casos)}): OK")
 
 # 6. Los ejemplos del repositorio dan la misma traza que la máquina de TAC
 ejemplos = os.path.join(os.path.dirname(__file__), "..", "ejemplos")
-for nombre in ("caballero.pxl", "slime.pxl"):
+for nombre in ("caballero.pxl", "slime.pxl", "juego.pxl"):
     ejecutar(open(os.path.join(ejemplos, nombre), encoding="utf-8").read())
 programa, _, generador = compilar(open(os.path.join(ejemplos, "caballero.pxl"), encoding="utf-8").read())
 with InterfazPixelLang(generador) as interfaz:

@@ -25,7 +25,7 @@ from pathlib import Path
 
 from llvmlite import ir, binding as llvm
 
-from ast_pixellang import Asignacion, Logico, Numero, Unaria, Variable
+from ast_pixellang import Asignacion, Logico, Numero, Unaria, Variable, texto_expresion
 from maquina_tac import MINIMO, MAXIMO, ErrorEjecucion, mostrar
 
 I1, I32, I64, F64 = ir.IntType(1), ir.IntType(32), ir.IntType(64), ir.DoubleType()
@@ -415,10 +415,18 @@ def mapa_interfaz(programa, trazas_tac=None):
     comprobar que la biblioteca da los mismos resultados)."""
     mapa = {"personajes": [{"indice": k, "nombre": pj.nombre,
                             "estados": [e.nombre for e in pj.estados],
+                            "inicial": next(e.nombre for e in pj.estados
+                                            if e.modificador == "inicial"),
                             "finales": [e.nombre for e in pj.estados if e.modificador == "final"],
                             "eventos": list(pj.eventos),
                             "atributos": [{"indice": j, "nombre": a.nombre, "tipo": a.tipo}
-                                          for j, a in enumerate(pj.atributos)]}
+                                          for j, a in enumerate(pj.atributos)],
+                            # la función de transición δ, para mostrarla en el juego
+                            "transiciones": [{"origen": e.nombre, "evento": t.evento,
+                                              "guarda": texto_expresion(t.guarda)
+                                              if t.guarda is not None else "",
+                                              "destino": t.destino}
+                                             for e in pj.estados for t in e.transiciones]}
                            for k, pj in enumerate(programa.personajes)],
             "errores": [{"codigo": c, "mensaje": m} for c, m in ERRORES.items()],
             "simulaciones": []}

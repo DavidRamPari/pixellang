@@ -149,6 +149,31 @@ def texto_numero(valor):
     return str(valor)
 
 
+# Nivel de precedencia de cada operador binario, de menor a mayor, como en la gramática:
+# expr (||), conj (&&), rel (un solo operador relacional), arit (+ -) y term (* /)
+NIVEL = {"||": 1, "&&": 2, "<": 3, ">": 3, "<=": 3, ">=": 3, "==": 3, "!=": 3,
+         "+": 4, "-": 4, "*": 5, "/": 5}
+
+
+def texto_expresion(nodo, minimo=0):
+    """La expresión como se escribe en PixelLang, con paréntesis solo donde hacen falta.
+    Sirve para mostrar las guardas de las transiciones (mapa de la interfaz)."""
+    if isinstance(nodo, Numero):
+        texto, nivel = texto_numero(nodo.valor), 7
+    elif isinstance(nodo, Logico):
+        texto, nivel = ("verdadero" if nodo.valor else "falso"), 7
+    elif isinstance(nodo, Variable):
+        texto, nivel = nodo.nombre, 7
+    elif isinstance(nodo, Unaria):
+        texto, nivel = nodo.op + texto_expresion(nodo.operando, 6), 6
+    else:
+        nivel = NIVEL[nodo.op]
+        # los operadores son asociativos por la izquierda; el relacional no se encadena
+        izquierda = texto_expresion(nodo.izquierda, nivel + 1 if nivel == 3 else nivel)
+        texto = f"{izquierda} {nodo.op} {texto_expresion(nodo.derecha, nivel + 1)}"
+    return f"({texto})" if nivel < minimo else texto
+
+
 # Listado del AST con ├── y └──, como el de la opción --arbol ------------------
 
 def etiqueta(nodo):
