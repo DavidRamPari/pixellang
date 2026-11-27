@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/JuegoPixelLang.unity
+    guid: 1c776e3a1879e944d846b72ef11be1c4
+  - enabled: 1
     path: Assets/Scenes/DemoPixelLang.unity
     guid: 6d522dd9365b7f84ea10ef2a7c2cccaa
   m_configObjects:

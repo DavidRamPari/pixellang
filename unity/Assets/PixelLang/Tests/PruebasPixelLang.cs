@@ -6,7 +6,8 @@ using UnityEngine.TestTools;
 
 // Nivel 9 del plan de validación: la biblioteca que genera el compilador, usada desde Unity,
 // da los mismos estados y atributos que la máquina de código de tres direcciones (la traza
-// está en Resources/pixellang.json), y la escena muestra esos mismos estados.
+// está en Resources/pixellang.json), las escenas muestran esos estados y el minijuego solo
+// envía eventos: lo que pasa con ellos lo decide la biblioteca.
 // Se ejecutan con: unity test <proyecto> --mode PlayMode
 public class PruebasPixelLang
 {
@@ -14,17 +15,20 @@ public class PruebasPixelLang
     public void LaBibliotecaDaLaMismaTrazaQueElTAC()
     {
         var mapa = MapaPixelLang.Cargar();
-        var simulacion = mapa.simulaciones[0];
-        var personaje = new PersonajeNativo(mapa.personajes[simulacion.personaje]);
-        for (int i = 0; i < simulacion.pasos.Length; i++)
+        Assert.AreEqual(2, mapa.simulaciones.Length, "ejemplos/juego.pxl tiene dos bloques simular");
+        foreach (var simulacion in mapa.simulaciones)
         {
-            var paso = simulacion.pasos[i];
-            if (i == 0)
-                personaje.Iniciar();
-            else
-                personaje.Enviar(paso.evento);
-            Assert.IsTrue(personaje.Coincide(paso),
-                $"Paso {i} ({paso.evento}): la máquina de TAC da {paso.estado} y la biblioteca, {personaje.Estado}");
+            var personaje = new PersonajeNativo(mapa.personajes[simulacion.personaje]);
+            for (int i = 0; i < simulacion.pasos.Length; i++)
+            {
+                var paso = simulacion.pasos[i];
+                if (i == 0)
+                    personaje.Iniciar();
+                else
+                    personaje.Enviar(paso.evento);
+                Assert.IsTrue(personaje.Coincide(paso),
+                    $"{personaje.datos.nombre}, paso {i} ({paso.evento}): la máquina de TAC da {paso.estado} y la biblioteca, {personaje.Estado}");
+            }
         }
     }
 
@@ -34,6 +38,38 @@ public class PruebasPixelLang
         Assert.AreEqual(3, PixelLangNative.pl_iniciar(-1));
         Assert.AreEqual(3, PixelLangNative.pl_evento(0, 999));
         Assert.AreEqual(-1, PixelLangNative.pl_estado(42));
+    }
+
+    [Test]
+    public void AturdidoElCaballeroIgnoraAtacar()
+    {
+        var caballero = new ActorPixelLang(MapaPixelLang.Cargar().Personaje("Caballero"));
+        caballero.Iniciar(0f);
+        Assert.AreEqual("Reposo", caballero.Estado);
+        Assert.GreaterOrEqual(caballero.Enviar("recibir_golpe", 0f), 0);
+        Assert.AreEqual("Aturdido", caballero.Estado);
+        Assert.AreEqual(-1, caballero.Enviar("atacar", 0f), "Aturdido no tiene una transición con atacar");
+        Assert.AreEqual("Aturdido", caballero.Estado);
+        Assert.AreEqual(75, (int)caballero.Valor("vida"));
+        StringAssert.Contains("no tiene esa transición", caballero.Ignorado);
+    }
+
+    [Test]
+    public void LaGuardaLlevaAlSlimeASuEstadoFinal()
+    {
+        var slime = new ActorPixelLang(MapaPixelLang.Cargar().Personaje("Slime"));
+        slime.Iniciar(0f);
+        slime.Enviar("recibir_golpe", 0f);                    // Patrulla -> Aturdido, vida 20
+        int t = slime.Enviar("fin_aturdimiento", 0f);         // vida > 0: vuelve a Persecucion
+        Assert.AreEqual("Persecucion", slime.Estado);
+        Assert.AreEqual("", slime.Delta[t].guarda);
+        slime.Enviar("recibir_golpe", 0f);
+        slime.Enviar("recibir_golpe", 0f);                    // Aturdido -> Aturdido, vida 0
+        t = slime.Enviar("fin_aturdimiento", 0f);
+        Assert.AreEqual("Aplastado", slime.Estado);
+        Assert.AreEqual("vida <= 0", slime.Delta[t].guarda);
+        Assert.IsTrue(slime.EnEstadoFinal);
+        Assert.AreEqual(-1, slime.Enviar("ver_jugador", 0f), "un estado final no tiene transiciones");
     }
 
     [UnityTest]
@@ -55,5 +91,27 @@ public class PruebasPixelLang
         var mapa = MapaPixelLang.Cargar();
         var pasos = mapa.simulaciones[0].pasos;
         Assert.AreEqual(pasos[pasos.Length - 1].estado, demo.EstadoMostrado);
+    }
+
+    [UnityTest]
+    public IEnumerator LaPartidaDeDemostracionTerminaConElSlimeAplastado()
+    {
+        SceneManager.LoadScene("JuegoPixelLang");
+        yield return null;
+        yield return null;
+        var juego = Object.FindAnyObjectByType<JuegoPixelLang>();
+        Assert.IsNotNull(juego, "La escena JuegoPixelLang no tiene el componente JuegoPixelLang");
+        Assert.AreEqual(juego.Caballero.Datos.inicial, juego.Caballero.Estado);
+        Assert.AreEqual(juego.Slime.Datos.inicial, juego.Slime.Estado);
+        Time.timeScale = 3f;
+        juego.IniciarDemostracion();
+        float limite = Time.realtimeSinceStartup + 40f;
+        while (!juego.FinDePartida && Time.realtimeSinceStartup < limite)
+            yield return null;
+        Time.timeScale = 1f;
+        Assert.IsTrue(juego.FinDePartida, "La partida no terminó");
+        Assert.AreEqual("Aplastado", juego.Slime.Estado);
+        Assert.AreEqual("Reposo", juego.Caballero.Estado);
+        Assert.AreEqual(75, (int)juego.Caballero.Valor("vida"), "el caballero recibió un solo golpe");
     }
 }

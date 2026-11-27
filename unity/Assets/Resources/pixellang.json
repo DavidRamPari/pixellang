@@ -10,6 +10,7 @@
         "Aturdido",
         "Derrotado"
       ],
+      "inicial": "Reposo",
       "finales": [
         "Derrotado"
       ],
@@ -41,6 +42,144 @@
           "indice": 3,
           "nombre": "y",
           "tipo": "real"
+        }
+      ],
+      "transiciones": [
+        {
+          "origen": "Reposo",
+          "evento": "saltar",
+          "guarda": "",
+          "destino": "Saltando"
+        },
+        {
+          "origen": "Reposo",
+          "evento": "atacar",
+          "guarda": "",
+          "destino": "Atacando"
+        },
+        {
+          "origen": "Reposo",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Saltando",
+          "evento": "aterrizar",
+          "guarda": "",
+          "destino": "Reposo"
+        },
+        {
+          "origen": "Saltando",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Atacando",
+          "evento": "fin_ataque",
+          "guarda": "",
+          "destino": "Reposo"
+        },
+        {
+          "origen": "Atacando",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "fin_aturdimiento",
+          "guarda": "vida <= 0",
+          "destino": "Derrotado"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "fin_aturdimiento",
+          "guarda": "",
+          "destino": "Reposo"
+        }
+      ]
+    },
+    {
+      "indice": 1,
+      "nombre": "Slime",
+      "estados": [
+        "Patrulla",
+        "Persecucion",
+        "Aturdido",
+        "Aplastado"
+      ],
+      "inicial": "Patrulla",
+      "finales": [
+        "Aplastado"
+      ],
+      "eventos": [
+        "ver_jugador",
+        "perder_jugador",
+        "recibir_golpe",
+        "fin_aturdimiento"
+      ],
+      "atributos": [
+        {
+          "indice": 0,
+          "nombre": "vida",
+          "tipo": "entero"
+        },
+        {
+          "indice": 1,
+          "nombre": "daño_golpe",
+          "tipo": "entero"
+        }
+      ],
+      "transiciones": [
+        {
+          "origen": "Patrulla",
+          "evento": "ver_jugador",
+          "guarda": "",
+          "destino": "Persecucion"
+        },
+        {
+          "origen": "Patrulla",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Persecucion",
+          "evento": "perder_jugador",
+          "guarda": "",
+          "destino": "Patrulla"
+        },
+        {
+          "origen": "Persecucion",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "recibir_golpe",
+          "guarda": "",
+          "destino": "Aturdido"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "fin_aturdimiento",
+          "guarda": "vida <= 0",
+          "destino": "Aplastado"
+        },
+        {
+          "origen": "Aturdido",
+          "evento": "fin_aturdimiento",
+          "guarda": "",
+          "destino": "Persecucion"
         }
       ]
     }
@@ -203,6 +342,74 @@
             25.0,
             0.0,
             0.0
+          ],
+          "error": ""
+        }
+      ]
+    },
+    {
+      "personaje": 1,
+      "pasos": [
+        {
+          "evento": "inicio",
+          "estado": "Patrulla",
+          "valores": [
+            30.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "ver_jugador",
+          "estado": "Persecucion",
+          "valores": [
+            30.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            20.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_aturdimiento",
+          "estado": "Persecucion",
+          "valores": [
+            20.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            10.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "recibir_golpe",
+          "estado": "Aturdido",
+          "valores": [
+            0.0,
+            10.0
+          ],
+          "error": ""
+        },
+        {
+          "evento": "fin_aturdimiento",
+          "estado": "Aplastado",
+          "valores": [
+            0.0,
+            10.0
           ],
           "error": ""
         }

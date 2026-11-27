@@ -3,46 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
-// Escena de demostración del caballero de ejemplos/caballero.pxl. Este script no tiene reglas
+// Escena de validación del caballero de ejemplos/juego.pxl. Este script no tiene reglas
 // propias: envía los eventos a la biblioteca que generó el compilador de PixelLang (pl_evento)
 // y dibuja el estado y los atributos que ella devuelve. El botón "Ejecutar la simulación"
 // repite el bloque simular del programa y compara cada paso con la traza de la máquina de TAC
-// guardada en pixellang.json (nivel 9 del plan de validación).
+// guardada en pixellang.json (nivel 9 del plan de validación). Con Tab se vuelve al minijuego.
 //
 // Con el argumento -captura <carpeta>, el reproductor ejecuta la simulación sola, guarda un
 // cuadro por cada 1/30 de segundo en esa carpeta y se cierra (para grabar el video).
 public class DemoPixelLang : MonoBehaviour
 {
     public float pausa = 1.2f;   // segundos entre un evento y el siguiente
-
-    static readonly string[] Dibujo =
-    {
-        "................",
-        ".....KKKKKK.....",
-        "....KSSSSSSK..W.",
-        "....KSVVVVSK..W.",
-        "....KSSSSSSK..W.",
-        ".....KSSSSK...W.",
-        "...KKAAAAAAKKHHH",
-        "..KAAAAAAAAAAKH.",
-        "..KAAAYYYYAAAK..",
-        "..KAAAAAAAAAAK..",
-        "...KKAAAAAAKK...",
-        "....KAAAAAAK....",
-        "....KAAK..KAAK..",
-        "....KBBK..KBBK..",
-        "...KBBBK..KBBBK.",
-        "................",
-    };
-
-    static readonly Dictionary<char, Color> Paleta = new Dictionary<char, Color>
-    {
-        { 'K', new Color(0.08f, 0.08f, 0.12f) }, { 'S', new Color(0.74f, 0.77f, 0.82f) },
-        { 'V', new Color(0.16f, 0.16f, 0.22f) }, { 'A', new Color(0.24f, 0.45f, 0.86f) },
-        { 'Y', new Color(0.96f, 0.80f, 0.22f) }, { 'W', new Color(0.90f, 0.92f, 0.96f) },
-        { 'H', new Color(0.55f, 0.36f, 0.16f) }, { 'B', new Color(0.36f, 0.25f, 0.18f) },
-    };
 
     static readonly Color[] Tintes =
     {
@@ -121,44 +95,25 @@ public class DemoPixelLang : MonoBehaviour
         camara.backgroundColor = new Color(0.11f, 0.13f, 0.19f);
 
         var suelo = new GameObject("Suelo").AddComponent<SpriteRenderer>();
-        suelo.sprite = SpriteDeColor(new Color(0.25f, 0.33f, 0.24f));
+        suelo.sprite = DibujosPixelLang.DeColor(new Color(0.25f, 0.33f, 0.24f));
         suelo.transform.position = new Vector3(0f, -3f, 0f);
         suelo.transform.localScale = new Vector3(40f, 2f, 1f);
 
         figuraBase = new GameObject("Caballero").transform;
         figura = new GameObject("Dibujo").AddComponent<SpriteRenderer>();
         figura.transform.SetParent(figuraBase, false);
-        figura.sprite = SpriteDelCaballero();
+        figura.sprite = DibujosPixelLang.Caballero();
         figura.sortingOrder = 1;
-    }
-
-    static Sprite SpriteDeColor(Color color)
-    {
-        var textura = new Texture2D(1, 1) { filterMode = FilterMode.Point };
-        textura.SetPixel(0, 0, color);
-        textura.Apply();
-        return Sprite.Create(textura, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-    }
-
-    static Sprite SpriteDelCaballero()
-    {
-        var textura = new Texture2D(16, 16, TextureFormat.RGBA32, false)
-        {
-            filterMode = FilterMode.Point,
-            wrapMode = TextureWrapMode.Clamp,
-        };
-        for (int fila = 0; fila < 16; fila++)
-            for (int col = 0; col < 16; col++)
-            {
-                char c = Dibujo[fila][col];
-                textura.SetPixel(col, 15 - fila, c == '.' ? Color.clear : Paleta[c]);
-            }
-        textura.Apply();
-        return Sprite.Create(textura, new Rect(0, 0, 16, 16), new Vector2(0.5f, 0f), 8f);
     }
 
     void Update()
     {
+        var teclado = Keyboard.current;
+        if (teclado != null && teclado.tabKey.wasPressedThisFrame && !ejecutando)
+        {
+            SceneManager.LoadScene("JuegoPixelLang");
+            return;
+        }
         if (personaje == null || figura == null)
             return;
         // Todo lo que se dibuja sale de la biblioteca: estado, altura y error
@@ -277,6 +232,8 @@ public class DemoPixelLang : MonoBehaviour
                   EstadoMostrado, new GUIStyle(grande) { alignment = TextAnchor.MiddleCenter });
         GUI.Label(new Rect(370 * s, Screen.height - 60 * s, Screen.width - 870 * s, 50 * s), mensaje,
                   new GUIStyle(texto) { alignment = TextAnchor.MiddleCenter, wordWrap = true });
+        GUI.Label(new Rect(370 * s, 22 * s, Screen.width - 870 * s, 24 * s), "Tab: volver al minijuego",
+                  new GUIStyle(subtitulo) { alignment = TextAnchor.MiddleCenter });
     }
 
     void PanelIzquierdo(float s)

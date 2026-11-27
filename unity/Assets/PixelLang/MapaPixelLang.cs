@@ -2,9 +2,10 @@ using System;
 using UnityEngine;
 
 // Contenido de pixellang.json, el mapa que genera el compilador junto con la biblioteca
-// (python src/main.py <programa> --emitir build/pixellang). Para cada personaje guarda los
-// nombres de sus estados, eventos y atributos en el orden de sus índices, y para cada bloque
-// simular, la traza que dio la máquina de código de tres direcciones.
+// (python src/main.py <programa> --emitir build/unity/pixellang). Para cada personaje guarda
+// los nombres de sus estados, eventos y atributos en el orden de sus índices y su función de
+// transición δ, y para cada bloque simular, la traza que dio la máquina de código de tres
+// direcciones.
 [Serializable]
 public class AtributoPixelLang
 {
@@ -14,14 +15,25 @@ public class AtributoPixelLang
 }
 
 [Serializable]
+public class TransicionPixelLang
+{
+    public string origen;
+    public string evento;
+    public string guarda;       // vacía si la transición no tiene guarda
+    public string destino;
+}
+
+[Serializable]
 public class PersonajePixelLang
 {
     public int indice;
     public string nombre;
     public string[] estados;
+    public string inicial;
     public string[] finales;
     public string[] eventos;
     public AtributoPixelLang[] atributos;
+    public TransicionPixelLang[] transiciones;
 }
 
 [Serializable]
@@ -52,5 +64,13 @@ public class MapaPixelLang
         if (texto == null)
             throw new InvalidOperationException("Falta Assets/Resources/pixellang.json");
         return JsonUtility.FromJson<MapaPixelLang>(texto.text);
+    }
+
+    public PersonajePixelLang Personaje(string nombre)
+    {
+        var personaje = Array.Find(personajes, p => p.nombre == nombre);
+        if (personaje == null)
+            throw new InvalidOperationException("El programa no tiene el personaje " + nombre);
+        return personaje;
     }
 }
